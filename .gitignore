@@ -1,0 +1,192 @@
+# ============================================================
+# Operating Systems
+# ============================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+
+# ============================================================
+# IDEs and Editors
+# ============================================================
+
+# JetBrains (IntelliJ IDEA / DataGrip / Android Studio)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Antigravity
+.antigravity/
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+
+
+# ============================================================
+# Environment Variables / Secrets
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+
+# Android signing
+*.jks
+*.keystore
+key.properties
+
+
+# ============================================================
+# Logs
+# ============================================================
+
+*.log
+logs/
+log/
+
+
+# ============================================================
+# Temporary / Cache Files
+# ============================================================
+
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+
+
+# ============================================================
+# Java / Spring Boot
+# ============================================================
+
+# Java compiled files
+*.class
+
+# Maven
+target/
+.mvn/timing.properties
+
+# Gradle
+.gradle/
+**/build/
+
+# Spring Boot
+spring-shell.log
+
+
+# ============================================================
+# Flutter / Dart
+# ============================================================
+
+# Flutter-specific rules are also handled by:
+# frontend/.gitignore
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+coverage/
+
+# Flutter build output
+frontend/build/
+
+
+# ============================================================
+# Android
+# ============================================================
+
+*.apk
+*.aab
+
+# Machine-specific Android SDK path
+local.properties
+
+
+# ============================================================
+# iOS / macOS
+# ============================================================
+
+Pods/
+.symlinks/
+
+# Xcode user-specific files
+xcuserdata/
+*.xcuserstate
+
+# Podfile.lock is intentionally versioned
+
+
+# ============================================================
+# Windows Development
+# ============================================================
+
+# Visual Studio / MSBuild
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Windows build artifacts
+Debug/
+Release/
+x64/
+x86/
+
+
+# ============================================================
+# Database
+# ============================================================
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Database dumps / backups
+*.dump
+*.sql.gz
+*.bak
+
+# NOTE:
+# Regular .sql files are intentionally NOT ignored because
+# migrations, schemas and seeds should be versioned.
+
+
+# ============================================================
+# Docker
+# ============================================================
+
+# Developer-specific Docker overrides
+docker-compose.override.yml
+compose.override.yml
+
+
+# ============================================================
+# Tests / Coverage
+# ============================================================
+
+test-results/
+reports/
