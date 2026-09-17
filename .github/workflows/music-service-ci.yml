@@ -1,0 +1,62 @@
+name: Music Service CI
+
+on:
+  push:
+    branches:
+      - feature/music
+      - main
+    paths:
+      - 'backend/music-service/**'
+      - '.github/workflows/music-service-ci.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/music-service/**'
+      - '.github/workflows/music-service-ci.yml'
+
+jobs:
+  test-music-service:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: music_db
+          POSTGRES_USER: music_user
+          POSTGRES_PASSWORD: music_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U music_user -d music_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MUSIC_DB_PASSWORD: music_test_password
+      SPOTIFY_CLIENT_ID: spotify_test_client_id
+      SPOTIFY_CLIENT_SECRET: spotify_test_client_secret
+    
+    defaults:
+      run:
+        working-directory: backend/music-service
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compilar backend
+        run: mvn clean compile
+
+      - name: Ejecutar pruebas
+        run: mvn test
