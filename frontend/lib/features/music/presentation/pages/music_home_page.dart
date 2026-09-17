@@ -1,20 +1,40 @@
 import 'package:flutter/material.dart';
+import 'music_detail_page.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/musa_sidebar.dart';
+
 import '../../data/music_item.dart';
+import '../../data/models/music_search_item.dart';
+import '../../data/services/music_api_service.dart';
+
 import '../widgets/explore_card.dart';
 import '../widgets/music_card.dart';
 import '../widgets/music_filter_chip.dart';
 
-class MusicHomePage extends StatelessWidget {
+class MusicHomePage extends StatefulWidget {
   const MusicHomePage({super.key});
+
+  @override
+  State<MusicHomePage> createState() => _MusicHomePageState();
+}
+
+class _MusicHomePageState extends State<MusicHomePage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  final MusicApiService _musicApiService = MusicApiService();
+
+  List<MusicSearchItem> _searchResults = [];
+
+  bool _isLoading = false;
+  String? _errorMessage;
+  bool _hasSearched = false;
 
   static const reviewedMusic = [
     MusicItem(
       spotifyId: 'mock_cris_mj',
-      title: 'Déjame pensar',
+      title: 'Déjame Pensar',
       artist: 'Cris MJ',
       imageUrl: '',
       type: MusicType.album,
@@ -59,6 +79,49 @@ class MusicHomePage extends StatelessWidget {
     ),
   ];
 
+  Future<void> _searchMusic() async {
+    final query = _searchController.text.trim();
+
+    if (query.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _hasSearched = true;
+    });
+
+    try {
+      final results = await _musicApiService.searchMusic(query);
+
+      if (!mounted) return;
+
+      setState(() {
+        _searchResults = results;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _searchResults = [];
+        _errorMessage = 'No se pudo realizar la búsqueda.';
+      });
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,12 +147,21 @@ class MusicHomePage extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     TextField(
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Buscar canciones, álbumes o artistas...',
-                        prefixIcon: Icon(
+                      controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _searchMusic(),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar canciones, álbumes o artistas...',
+                        prefixIcon: const Icon(
                           Icons.search,
                           color: AppColors.ink,
+                        ),
+                        suffixIcon: IconButton(
+                          onPressed: _searchMusic,
+                          icon: const Icon(
+                            Icons.arrow_forward,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
                     ),
@@ -112,11 +184,14 @@ class MusicHomePage extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 38),
+                    const SizedBox(height: 30),
+
+                    if (_hasSearched) _buildSearchSection(),
+
+                    if (_hasSearched) const SizedBox(height: 38),
 
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Mis músicas reseñadas',
@@ -142,8 +217,7 @@ class MusicHomePage extends StatelessWidget {
                         children: reviewedMusic
                             .map(
                               (item) => Padding(
-                                padding:
-                                    const EdgeInsets.only(right: 16),
+                                padding: const EdgeInsets.only(right: 16),
                                 child: MusicCard(item: item),
                               ),
                             )
@@ -154,17 +228,14 @@ class MusicHomePage extends StatelessWidget {
                     const SizedBox(height: 44),
 
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Explora para ti',
-                              style:
-                                  AppTextStyles.sectionTitle,
+                              style: AppTextStyles.sectionTitle,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -246,17 +317,14 @@ class MusicHomePage extends StatelessWidget {
                     const SizedBox(height: 42),
 
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Artistas que podrías seguir',
-                              style:
-                                  AppTextStyles.sectionTitle,
+                              style: AppTextStyles.sectionTitle,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -315,6 +383,155 @@ class MusicHomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildSearchSection() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Text(
+        _errorMessage!,
+        style: AppTextStyles.secondary,
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Text(
+        'No se encontraron resultados.',
+        style: AppTextStyles.secondary,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Resultados',
+          style: AppTextStyles.sectionTitle,
+        ),
+
+        const SizedBox(height: 16),
+
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: _searchResults.map((item) {
+            return _SearchResultCard(item: item);
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchResultCard extends StatelessWidget {
+  final MusicSearchItem item;
+
+  const _SearchResultCard({
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MusicDetailPage(
+                  item: item,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: item.imageUrl != null &&
+                          item.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          item.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) {
+                            return _imagePlaceholder();
+                          },
+                        )
+                      : _imagePlaceholder(),
+                ),
+
+                const SizedBox(height: 12),
+
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.cardTitle,
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  item.artistName ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.secondary,
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  _typeText(item.contentType),
+                  style: AppTextStyles.secondary.copyWith(
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: AppColors.lilac,
+      child: const Center(
+        child: Icon(
+          Icons.music_note,
+          size: 44,
+          color: AppColors.ink,
+        ),
+      ),
+    );
+  }
+
+  String _typeText(String type) {
+    switch (type) {
+      case 'SONG':
+        return 'Canción';
+      case 'ALBUM':
+        return 'Álbum';
+      case 'ARTIST':
+        return 'Artista';
+      default:
+        return type;
+    }
   }
 }
 
