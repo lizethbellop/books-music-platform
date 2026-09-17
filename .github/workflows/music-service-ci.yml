@@ -37,7 +37,9 @@ jobs:
 
     env:
       MUSIC_DB_PASSWORD: music_test_password
-
+      SPOTIFY_CLIENT_ID: spotify_test_client_id
+      SPOTIFY_CLIENT_SECRET: spotify_test_client_secret
+    
     defaults:
       run:
         working-directory: backend/music-service
