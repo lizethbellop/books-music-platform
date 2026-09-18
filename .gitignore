@@ -190,3 +190,6 @@ compose.override.yml
 
 test-results/
 reports/
+
+### Local environment variables ###
+.env
