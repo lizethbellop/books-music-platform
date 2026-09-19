@@ -21,4 +21,14 @@ public class ProfileService {
     public Profile getByUserId(UUID userId){
         return profileRepository.findByUserId(userId).orElseThrow(() -> new ProfileNotFoundException(userId));
     }
+
+    @Transactional
+    public Profile updateProfile(UUID userId, String biography, boolean privateProfile){
+        Profile profile = getByUserId(userId);
+
+        profile.setBiography(biography);
+        profile.setPrivateProfile(privateProfile);
+
+        return profile;
+    }
 }
