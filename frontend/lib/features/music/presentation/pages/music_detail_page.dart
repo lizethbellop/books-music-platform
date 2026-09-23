@@ -21,12 +21,20 @@ class MusicDetailPage extends StatefulWidget {
 class _MusicDetailPageState extends State<MusicDetailPage> {
   final MusicApiService _musicApiService = MusicApiService();
 
+  final TextEditingController _reviewController =
+      TextEditingController();
+
   MusicDetail? _detail;
+
   bool _isLoading = true;
   String? _errorMessage;
 
   double _rating = 0;
   bool _isFavorite = false;
+
+  int? _reviewId;
+
+  List<Map<String, dynamic>> _reviews = [];
 
   @override
   void initState() {
@@ -41,20 +49,70 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
         spotifyId: widget.item.spotifyId,
       );
 
+      final review = await _musicApiService.getUserReview(
+        userId: 1,
+        detail: detail,
+      );
+
+      final reviews = await _musicApiService.getReviews(
+        detail: detail,
+      );
+
       if (!mounted) return;
 
       setState(() {
         _detail = detail;
+        _reviews = reviews;
+
+        if (review != null) {
+          _reviewId = review['id'];
+          _reviewController.text =
+              review['reviewText'] ?? '';
+        } else {
+          _reviewId = null;
+          _reviewController.clear();
+        }
+
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'No se pudo cargar el detalle musical.';
+        _errorMessage =
+            'No se pudo cargar el detalle musical.';
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _refreshReviews() async {
+    final detail = _detail;
+
+    if (detail == null) {
+      return;
+    }
+
+    try {
+      final reviews = await _musicApiService.getReviews(
+        detail: detail,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = reviews;
+      });
+    } catch (e) {
+      // No bloqueamos la pantalla si solamente falla
+      // la actualización de la lista de reseñas.
+    }
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 
   @override
@@ -104,7 +162,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                   child: detail.imageUrl != null &&
                           detail.imageUrl!.isNotEmpty
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius:
+                              BorderRadius.circular(18),
                           child: Image.network(
                             detail.imageUrl!,
                             fit: BoxFit.cover,
@@ -113,7 +172,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       : Container(
                           decoration: BoxDecoration(
                             color: AppColors.lilac,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius:
+                                BorderRadius.circular(18),
                           ),
                           child: const Icon(
                             Icons.music_note,
@@ -176,7 +236,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
                   return IconButton(
                     onPressed: () async {
-                      final newRating = value.toDouble();
+                      final newRating =
+                          value.toDouble();
 
                       setState(() {
                         _rating = newRating;
@@ -191,17 +252,23 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 
                         if (!mounted) return;
 
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
                           const SnackBar(
-                            content: Text('Calificación guardada'),
+                            content: Text(
+                              'Calificación guardada',
+                            ),
                           ),
                         );
                       } catch (e) {
                         if (!mounted) return;
 
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
                           const SnackBar(
-                            content: Text('No se pudo guardar la calificación'),
+                            content: Text(
+                              'No se pudo guardar la calificación',
+                            ),
                           ),
                         );
                       }
@@ -233,17 +300,23 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       _isFavorite = true;
                     });
 
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
                       const SnackBar(
-                        content: Text('Agregado a favoritos'),
+                        content: Text(
+                          'Agregado a favoritos',
+                        ),
                       ),
                     );
                   } catch (e) {
                     if (!mounted) return;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
                       const SnackBar(
-                        content: Text('No se pudo agregar a favoritos'),
+                        content: Text(
+                          'No se pudo agregar a favoritos',
+                        ),
                       ),
                     );
                   }
@@ -259,6 +332,213 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                       : 'Agregar a favoritos',
                 ),
               ),
+
+              const SizedBox(height: 30),
+
+              Text(
+                'Tu reseña',
+                style: AppTextStyles.sectionTitle,
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _reviewController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText:
+                      'Escribe lo que piensas de este contenido...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              FilledButton(
+                onPressed: () async {
+                  final reviewText =
+                      _reviewController.text.trim();
+
+                  if (reviewText.isEmpty) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Escribe una reseña primero',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  try {
+                    if (_reviewId == null) {
+                      await _musicApiService.createReview(
+                        userId: 1,
+                        detail: detail,
+                        reviewText: reviewText,
+                      );
+
+                      final review =
+                          await _musicApiService.getUserReview(
+                        userId: 1,
+                        detail: detail,
+                      );
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _reviewId = review?['id'];
+                      });
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña guardada',
+                          ),
+                        ),
+                      );
+                    } else {
+                      await _musicApiService.updateReview(
+                        reviewId: _reviewId!,
+                        reviewText: reviewText,
+                      );
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña editada',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'No se pudo guardar la reseña',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  _reviewId == null
+                      ? 'Publicar reseña'
+                      : 'Editar reseña',
+                ),
+              ),
+
+              if (_reviewId != null) ...[
+                const SizedBox(height: 12),
+
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await _musicApiService.deleteReview(
+                        reviewId: _reviewId!,
+                      );
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _reviewId = null;
+                        _reviewController.clear();
+                      });
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña eliminada',
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudo eliminar la reseña',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                  ),
+                  label: const Text(
+                    'Eliminar reseña',
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 40),
+
+              Text(
+                'Reseñas',
+                style: AppTextStyles.sectionTitle,
+              ),
+
+              const SizedBox(height: 16),
+
+              if (_reviews.isEmpty)
+                Text(
+                  'Todavía no hay reseñas para este contenido.',
+                  style: AppTextStyles.secondary,
+                )
+              else
+                ..._reviews.map(
+                  (review) => Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(
+                      bottom: 12,
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.warmWhite,
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Usuario ${review['userId']}',
+                          style:
+                              AppTextStyles.sectionTitle,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          review['reviewText'] ?? '',
+                          style:
+                              AppTextStyles.secondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -270,10 +550,13 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     switch (type) {
       case 'SONG':
         return 'Canción';
+
       case 'ALBUM':
         return 'Álbum';
+
       case 'ARTIST':
         return 'Artista';
+
       default:
         return type;
     }
