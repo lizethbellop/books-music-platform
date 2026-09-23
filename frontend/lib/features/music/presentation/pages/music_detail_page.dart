@@ -24,6 +24,9 @@ class _MusicDetailPageState
   final MusicApiService _musicApiService =
       MusicApiService();
 
+  final TextEditingController _reviewController =
+      TextEditingController();
+
   MusicDetail? _detail;
 
   bool _isLoading = true;
@@ -33,6 +36,10 @@ class _MusicDetailPageState
 
   double _rating = 0;
   String? _errorMessage;
+
+  int? _reviewId;
+
+  List<Map<String, dynamic>> _reviews = [];
 
   @override
   void initState() {
@@ -53,10 +60,31 @@ class _MusicDetailPageState
         spotifyId: widget.item.spotifyId,
       );
 
+      final review = await _musicApiService.getUserReview(
+        userId: 1,
+        detail: detail,
+      );
+
+      final reviews = await _musicApiService.getReviews(
+        detail: detail,
+      );
+
       if (!mounted) return;
 
       setState(() {
         _detail = detail;
+        _reviews = reviews;
+
+        if (review != null) {
+          _reviewId = review['id'];
+          _reviewController.text =
+              review['reviewText'] ?? '';
+        } else {
+          _reviewId = null;
+          _reviewController.clear();
+        }
+
+        _isLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -143,7 +171,9 @@ class _MusicDetailPageState
       if (!mounted) return;
 
       setState(() {
-        _isFavorite = true;
+        _errorMessage =
+            'No se pudo cargar el detalle musical.';
+        _isLoading = false;
       });
 
       _showMessage('Agregado a favoritos');
@@ -162,14 +192,33 @@ class _MusicDetailPageState
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
+  Future<void> _refreshReviews() async {
+    final detail = _detail;
+
+    if (detail == null) {
+      return;
+    }
+
+    try {
+      final reviews = await _musicApiService.getReviews(
+        detail: detail,
       );
+
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = reviews;
+      });
+    } catch (e) {
+      // No bloqueamos la pantalla si solamente falla
+      // la actualización de la lista de reseñas.
+    }
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 
   @override
@@ -209,46 +258,33 @@ class _MusicDetailPageState
 
     final detail = _detail!;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop =
-            constraints.maxWidth >= 800;
-
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 48 : 20,
-            vertical: isDesktop ? 36 : 20,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 1000,
-              ),
-              child: isDesktop
-                  ? Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 360,
-                          child: _MusicImage(
-                            imageUrl: detail.imageUrl,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(40),
+      child: Center(
+        child: SizedBox(
+          width: 700,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: detail.imageUrl != null &&
+                          detail.imageUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(18),
+                          child: Image.network(
+                            detail.imageUrl!,
+                            fit: BoxFit.cover,
                           ),
-                        ),
-                        const SizedBox(width: 48),
-                        Expanded(
-                          child: _DetailInformation(
-                            detail: detail,
-                            rating: _rating,
-                            isFavorite: _isFavorite,
-                            isSavingRating:
-                                _isSavingRating,
-                            isSavingFavorite:
-                                _isSavingFavorite,
-                            onRatingSelected:
-                                _saveRating,
-                            onFavoritePressed:
-                                _addFavorite,
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.lilac,
+                            borderRadius:
+                                BorderRadius.circular(18),
                           ),
                         ),
                       ],
@@ -492,14 +528,57 @@ class _DetailInformation extends StatelessWidget {
                 horizontal: 24,
                 vertical: 18,
               ),
-            ),
-            icon: isSavingFavorite
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child:
-                        CircularProgressIndicator(
-                      strokeWidth: 2,
+
+              const SizedBox(height: 10),
+
+              Row(
+                children: List.generate(5, (index) {
+                  final value = index + 1;
+
+                  return IconButton(
+                    onPressed: () async {
+                      final newRating =
+                          value.toDouble();
+
+                      setState(() {
+                        _rating = newRating;
+                      });
+
+                      try {
+                        await _musicApiService.rateMusic(
+                          userId: 1,
+                          detail: detail,
+                          rating: newRating,
+                        );
+
+                        if (!mounted) return;
+
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Calificación guardada',
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'No se pudo guardar la calificación',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    icon: Icon(
+                      value <= _rating
+                          ? Icons.star
+                          : Icons.star_border,
+                      size: 34,
                       color: AppColors.ink,
                     ),
                   )
@@ -560,45 +639,265 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Agregado a favoritos',
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: AppColors.ink,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: onRetry,
-              style: FilledButton.styleFrom(
-                backgroundColor:
-                    AppColors.lavender,
-                foregroundColor: AppColors.ink,
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'No se pudo agregar a favoritos',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(
+                  _isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                ),
+                label: Text(
+                  _isFavorite
+                      ? 'En favoritos'
+                      : 'Agregar a favoritos',
+                ),
               ),
-              child: const Text(
-                'Volver a intentar',
+
+              const SizedBox(height: 30),
+
+              Text(
+                'Tu reseña',
+                style: AppTextStyles.sectionTitle,
               ),
-            ),
-          ],
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _reviewController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText:
+                      'Escribe lo que piensas de este contenido...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              FilledButton(
+                onPressed: () async {
+                  final reviewText =
+                      _reviewController.text.trim();
+
+                  if (reviewText.isEmpty) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Escribe una reseña primero',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  try {
+                    if (_reviewId == null) {
+                      await _musicApiService.createReview(
+                        userId: 1,
+                        detail: detail,
+                        reviewText: reviewText,
+                      );
+
+                      final review =
+                          await _musicApiService.getUserReview(
+                        userId: 1,
+                        detail: detail,
+                      );
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _reviewId = review?['id'];
+                      });
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña guardada',
+                          ),
+                        ),
+                      );
+                    } else {
+                      await _musicApiService.updateReview(
+                        reviewId: _reviewId!,
+                        reviewText: reviewText,
+                      );
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña editada',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'No se pudo guardar la reseña',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  _reviewId == null
+                      ? 'Publicar reseña'
+                      : 'Editar reseña',
+                ),
+              ),
+
+              if (_reviewId != null) ...[
+                const SizedBox(height: 12),
+
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await _musicApiService.deleteReview(
+                        reviewId: _reviewId!,
+                      );
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _reviewId = null;
+                        _reviewController.clear();
+                      });
+
+                      await _refreshReviews();
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reseña eliminada',
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudo eliminar la reseña',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                  ),
+                  label: const Text(
+                    'Eliminar reseña',
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 40),
+
+              Text(
+                'Reseñas',
+                style: AppTextStyles.sectionTitle,
+              ),
+
+              const SizedBox(height: 16),
+
+              if (_reviews.isEmpty)
+                Text(
+                  'Todavía no hay reseñas para este contenido.',
+                  style: AppTextStyles.secondary,
+                )
+              else
+                ..._reviews.map(
+                  (review) => Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(
+                      bottom: 12,
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.warmWhite,
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Usuario ${review['userId']}',
+                          style:
+                              AppTextStyles.sectionTitle,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          review['reviewText'] ?? '',
+                          style:
+                              AppTextStyles.secondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _typeText(String type) {
+    switch (type) {
+      case 'SONG':
+        return 'Canción';
+
+      case 'ALBUM':
+        return 'Álbum';
+
+      case 'ARTIST':
+        return 'Artista';
+
+      default:
+        return type;
+    }
   }
 }
