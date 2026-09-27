@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../models/musa_destination.dart';
+import 'musa_profile_avatar.dart';
 
 class MusaSidebar extends StatelessWidget {
   final MusaDestination selectedDestination;
   final ValueChanged<MusaDestination>? onDestinationSelected;
+  final String? profilePictureUrl;
 
   const MusaSidebar({
     super.key,
     this.selectedDestination = MusaDestination.music,
     this.onDestinationSelected,
+    this.profilePictureUrl,
   });
 
   @override
@@ -20,16 +23,9 @@ class MusaSidebar extends StatelessWidget {
       width: 230,
       decoration: const BoxDecoration(
         color: AppColors.warmWhite,
-        border: Border(
-          right: BorderSide(
-            color: AppColors.border,
-          ),
-        ),
+        border: Border(right: BorderSide(color: AppColors.border)),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 28,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,32 +36,28 @@ class MusaSidebar extends StatelessWidget {
           _SidebarItem(
             icon: Icons.home_outlined,
             title: 'Inicio',
-            selected:
-                selectedDestination == MusaDestination.home,
+            selected: selectedDestination == MusaDestination.home,
             onTap: () => _select(MusaDestination.home),
           ),
 
           _SidebarItem(
             icon: Icons.explore_outlined,
             title: 'Explorar',
-            selected:
-                selectedDestination == MusaDestination.explore,
+            selected: selectedDestination == MusaDestination.explore,
             onTap: () => _select(MusaDestination.explore),
           ),
 
           _SidebarItem(
             icon: Icons.music_note_outlined,
             title: 'Música',
-            selected:
-                selectedDestination == MusaDestination.music,
+            selected: selectedDestination == MusaDestination.music,
             onTap: () => _select(MusaDestination.music),
           ),
 
           _SidebarItem(
             icon: Icons.menu_book_outlined,
             title: 'Libros',
-            selected:
-                selectedDestination == MusaDestination.books,
+            selected: selectedDestination == MusaDestination.books,
             onTap: () => _select(MusaDestination.books),
           ),
 
@@ -75,12 +67,28 @@ class MusaSidebar extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          _SidebarItem(
-            icon: Icons.person_outline,
-            title: 'Perfil',
-            selected:
-                selectedDestination == MusaDestination.profile,
-            onTap: () => _select(MusaDestination.profile),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 7),
+            child: Material(
+              color: selectedDestination == MusaDestination.profile
+                  ? AppColors.lilac
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _select(MusaDestination.profile),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: Center(
+                    child: MusaProfileAvatar(
+                      imageUrl: profilePictureUrl,
+                      radius: 19,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -129,9 +137,7 @@ class _SidebarItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 7),
       decoration: BoxDecoration(
-        color: selected
-            ? AppColors.lilac
-            : Colors.transparent,
+        color: selected ? AppColors.lilac : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
@@ -145,9 +151,7 @@ class _SidebarItem extends StatelessWidget {
           title,
           style: AppTextStyles.navigation.copyWith(
             color: AppColors.ink,
-            fontWeight: selected
-                ? FontWeight.w700
-                : FontWeight.w500,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),

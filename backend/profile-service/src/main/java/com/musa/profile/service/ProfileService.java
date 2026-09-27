@@ -31,4 +31,12 @@ public class ProfileService {
 
         return profile;
     }
+
+    @Transactional
+    public Profile updatePhoto(UUID userId, String url, String publicId) {
+        Profile profile = getByUserId(userId);
+        profile.setProfilePictureUrl(url);
+        profile.setProfilePicturePublicId(publicId);
+        return profile;
+    }
 }
