@@ -25,15 +25,13 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.home,
       routes: {
         AppRoutes.home: (context) {
-          return const HomePage();
+          return const HomePage(userId: developmentUserId);
         },
         AppRoutes.music: (context) {
-          return const MusicHomePage();
+          return const MusicHomePage(userId: developmentUserId);
         },
         AppRoutes.profile: (context) {
-          return const ProfilePage(
-            userId: developmentUserId,
-          );
+          return const ProfilePage(userId: developmentUserId);
         },
       },
     );

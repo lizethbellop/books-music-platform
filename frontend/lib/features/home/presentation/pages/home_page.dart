@@ -7,35 +7,28 @@ import '../../../../shared/models/musa_destination.dart';
 import '../../../../shared/widgets/musa_navigation_shell.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final String userId;
 
-  void _selectDestination(
-    BuildContext context,
-    MusaDestination destination,
-  ) {
+  const HomePage({super.key, required this.userId});
+
+  void _selectDestination(BuildContext context, MusaDestination destination) {
     switch (destination) {
       case MusaDestination.home:
         return;
 
       case MusaDestination.music:
-        Navigator.of(context).pushReplacementNamed(
-          AppRoutes.music,
-        );
+        Navigator.of(context).pushReplacementNamed(AppRoutes.music);
         return;
 
       case MusaDestination.profile:
-        Navigator.of(context).pushReplacementNamed(
-          AppRoutes.profile,
-        );
+        Navigator.of(context).pushReplacementNamed(AppRoutes.profile);
         return;
 
       case MusaDestination.explore:
       case MusaDestination.books:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Esta sección se conectará próximamente.',
-            ),
+            content: Text('Esta sección se conectará próximamente.'),
           ),
         );
         return;
@@ -45,6 +38,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MusaNavigationShell(
+      userId: userId,
       selectedDestination: MusaDestination.home,
       onDestinationSelected: (destination) {
         _selectDestination(context, destination);
@@ -52,8 +46,7 @@ class HomePage extends StatelessWidget {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isDesktop =
-                constraints.maxWidth >= 800;
+            final isDesktop = constraints.maxWidth >= 800;
 
             return SingleChildScrollView(
               padding: EdgeInsets.symmetric(
@@ -61,20 +54,16 @@ class HomePage extends StatelessWidget {
                 vertical: isDesktop ? 36 : 20,
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isDesktop) ...[
-                    const _MusaWordmark(
-                      width: 125,
-                    ),
+                    const _MusaWordmark(width: 125),
                     const SizedBox(height: 28),
                   ],
 
                   Text(
                     'Inicio',
-                    style:
-                        AppTextStyles.pageTitle.copyWith(
+                    style: AppTextStyles.pageTitle.copyWith(
                       fontSize: isDesktop ? 44 : 34,
                     ),
                   ),
@@ -90,20 +79,13 @@ class HomePage extends StatelessWidget {
 
                   Center(
                     child: Container(
-                      constraints: const BoxConstraints(
-                        maxWidth: 560,
-                      ),
+                      constraints: const BoxConstraints(maxWidth: 560),
                       width: double.infinity,
-                      padding: EdgeInsets.all(
-                        isDesktop ? 40 : 28,
-                      ),
+                      padding: EdgeInsets.all(isDesktop ? 40 : 28),
                       decoration: BoxDecoration(
                         color: AppColors.warmWhite,
-                        borderRadius:
-                            BorderRadius.circular(24),
-                        border: Border.all(
-                          color: AppColors.border,
-                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -116,8 +98,7 @@ class HomePage extends StatelessWidget {
                           const SizedBox(height: 20),
                           Text(
                             'Todavía no hay contenido',
-                            style:
-                                AppTextStyles.sectionTitle,
+                            style: AppTextStyles.sectionTitle,
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 12),
@@ -131,8 +112,7 @@ class HomePage extends StatelessWidget {
                           const SizedBox(height: 24),
                           OutlinedButton.icon(
                             onPressed: () {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
                                     'Explorar se conectará próximamente.',
@@ -140,22 +120,12 @@ class HomePage extends StatelessWidget {
                                 ),
                               );
                             },
-                            icon: const Icon(
-                              Icons.explore_outlined,
-                            ),
-                            label: const Text(
-                              'Explorar Musa',
-                            ),
-                            style:
-                                OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  AppColors.ink,
-                              side: const BorderSide(
-                                color:
-                                    AppColors.lavender,
-                              ),
-                              padding:
-                                  const EdgeInsets.symmetric(
+                            icon: const Icon(Icons.explore_outlined),
+                            label: const Text('Explorar Musa'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.ink,
+                              side: const BorderSide(color: AppColors.lavender),
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 22,
                                 vertical: 14,
                               ),
@@ -178,9 +148,7 @@ class HomePage extends StatelessWidget {
 class _MusaWordmark extends StatelessWidget {
   final double width;
 
-  const _MusaWordmark({
-    required this.width,
-  });
+  const _MusaWordmark({required this.width});
 
   @override
   Widget build(BuildContext context) {
