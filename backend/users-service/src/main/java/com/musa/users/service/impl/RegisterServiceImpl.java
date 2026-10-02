@@ -4,6 +4,7 @@ import com.musa.users.dto.request.RegisterRequestDto;
 import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.entity.Role;
 import com.musa.users.entity.User;
+import com.musa.users.exception.PasswordMismatchException;
 import com.musa.users.exception.ResourceNotFoundException;
 import com.musa.users.exception.UserAlreadyExistsException;
 import com.musa.users.repository.RoleRepository;
@@ -14,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementación del servicio para la creación y registro de nuevos usuarios en PostgreSQL con notificación de bienvenida.
+ */
 @Service
 public class RegisterServiceImpl implements RegisterService {
 
@@ -38,6 +42,10 @@ public class RegisterServiceImpl implements RegisterService {
     @Transactional
     public MessageResponseDto register(RegisterRequestDto request) {
 
+        if (!request.password().equals(request.confirmPassword())) {
+            throw new PasswordMismatchException("Las contraseñas no coinciden.");
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistsException("El correo " + request.email() + " ya se encuentra registrado.");
         }
@@ -52,10 +60,9 @@ public class RegisterServiceImpl implements RegisterService {
         user.setRole(role);
         user.setIsActive(true);
 
-        User savedUser = userRepository.save(user);//guarda en postgreSQL
+        User savedUser = userRepository.save(user);
         emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFullName());
         return new MessageResponseDto("Registro exitoso.");
 
     }
-
 }

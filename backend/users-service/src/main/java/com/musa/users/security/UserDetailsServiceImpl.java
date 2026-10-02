@@ -11,7 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
-
+/**
+ * Servicio requerido por Spring Security para cargar los datos de autenticación
+ * y permisos del usuario desde la base de datos durante el proceso de inicio de sesión.
+ * */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
@@ -24,7 +27,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @NonNull
     @Override
     public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
-        com.musa.users.entity.User userEntity = userRepository.findByEmail(username)
+        com.musa.users.entity.User userEntity = userRepository.findByEmailWithRole(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el correo: " + username));
 
         SimpleGrantedAuthority authority = new SimpleGrantedAuthority(userEntity.getRole().getName());

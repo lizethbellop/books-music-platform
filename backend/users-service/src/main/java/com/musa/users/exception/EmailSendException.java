@@ -1,8 +1,6 @@
 package com.musa.users.exception;
 
-/**
- * CU-04 (EX-2) - Falla técnica al intentar enviar el correo electrónico de recuperación.
- * */
+/**Excepción lanzada cuando ocurre un error técnico durante el envío del correo electrónico. */
 
 public class EmailSendException extends RuntimeException {
     public EmailSendException(String message) {

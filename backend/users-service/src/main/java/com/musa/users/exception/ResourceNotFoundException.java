@@ -1,9 +1,6 @@
 package com.musa.users.exception;
 
-/**
- *Excepción base para búsquedas fallidas de entidades en base de datos (ej. Rol no configurado en BD).
- */
-
+/**Excepción lanzada cuando no se encuentra un recurso o entidad solicitada en la base de datos.*/
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {
         super(message);

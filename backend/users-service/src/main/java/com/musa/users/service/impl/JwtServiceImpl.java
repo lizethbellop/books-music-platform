@@ -15,6 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Implementación del servicio de utilidades JWT para la firma, desencriptación y validación de tokens.
+ */
 @Service
 public class JwtServiceImpl implements JwtService {
 

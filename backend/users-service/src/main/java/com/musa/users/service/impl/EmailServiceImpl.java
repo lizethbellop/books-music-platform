@@ -7,6 +7,9 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+/**
+ * Implementación del servicio de envío de correos electrónicos mediante Spring JavaMailSender.
+ */
 @Service
 public class EmailServiceImpl implements EmailService {
 
@@ -27,7 +30,7 @@ public class EmailServiceImpl implements EmailService {
             message.setTo(toEmail);
             message.setSubject("Restablecimiento de Contraseña - MUSA");
             message.setText("Hola,\n\nHas solicitado restablecer tu contraseña. "
-                    + "Utiliza el siguiente token de recuperación (válido por 15 minutos):\n\n"
+                    + "Utiliza el siguiente token de recuperación (válido por 5 minutos):\n\n"
                     + token + "\n\nSi no solicitaste este cambio, ignora este mensaje.");
 
             mailSender.send(message);
