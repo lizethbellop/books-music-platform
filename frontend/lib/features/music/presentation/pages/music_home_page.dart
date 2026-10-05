@@ -3,7 +3,7 @@ import 'music_detail_page.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../shared/widgets/musa_sidebar.dart';
+//import '../../../../shared/widgets/musa_sidebar.dart';
 
 import '../../data/music_item.dart';
 import '../../data/models/music_search_item.dart';
@@ -122,268 +122,307 @@ class _MusicHomePageState extends State<MusicHomePage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          const MusaSidebar(),
-          Expanded(
-            child: Container(
-              color: AppColors.cream,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 48,
-                  vertical: 36,
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Container(
+      color: AppColors.cream,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 48,
+          vertical: 36,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Música',
+              style: AppTextStyles.pageTitle,
+            ),
+
+            const SizedBox(height: 24),
+
+            TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _searchMusic(),
+              decoration: InputDecoration(
+                hintText:
+                    'Buscar canciones, álbumes o artistas...',
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.ink,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Música',
-                      style: AppTextStyles.pageTitle,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    TextField(
-                      controller: _searchController,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (_) => _searchMusic(),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar canciones, álbumes o artistas...',
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: AppColors.ink,
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: _searchMusic,
-                          icon: const Icon(
-                            Icons.arrow_forward,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        MusicFilterChip(
-                          label: 'Todo',
-                          selected: true,
-                        ),
-                        MusicFilterChip(label: 'Artistas'),
-                        MusicFilterChip(label: 'Álbumes'),
-                        MusicFilterChip(label: 'Canciones'),
-                        MusicFilterChip(label: 'Playlists'),
-                        MusicFilterChip(label: 'Géneros'),
-                      ],
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    if (_hasSearched) _buildSearchSection(),
-
-                    if (_hasSearched) const SizedBox(height: 38),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Mis músicas reseñadas',
-                          style: AppTextStyles.sectionTitle,
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Ver más  →',
-                            style: AppTextStyles.button.copyWith(
-                              color: AppColors.ink,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: reviewedMusic
-                            .map(
-                              (item) => Padding(
-                                padding: const EdgeInsets.only(right: 16),
-                                child: MusicCard(item: item),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 44),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Explora para ti',
-                              style: AppTextStyles.sectionTitle,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Recomendaciones basadas en tus gustos.',
-                              style: AppTextStyles.secondary,
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Ver más  →',
-                            style: AppTextStyles.button.copyWith(
-                              color: AppColors.ink,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final availableWidth = constraints.maxWidth;
-                        final cardWidth = (availableWidth - 48) / 4;
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: cardWidth,
-                              child: const ExploreCard(
-                                title: 'Indie para tu día',
-                                subtitle:
-                                    'Artistas y álbumes que te pueden gustar.',
-                                color: AppColors.lilac,
-                                icon: Icons.album_outlined,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: cardWidth,
-                              child: const ExploreCard(
-                                title: 'Clásicos',
-                                subtitle:
-                                    'Álbumes que todos deberían escuchar.',
-                                color: AppColors.mint,
-                                icon: Icons.library_music_outlined,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: cardWidth,
-                              child: const ExploreCard(
-                                title: 'Nuevos lanzamientos',
-                                subtitle:
-                                    'Lo más reciente en la escena musical.',
-                                color: AppColors.butter,
-                                icon: Icons.headphones_outlined,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: cardWidth,
-                              child: const ExploreCard(
-                                title: 'Hecho para ti',
-                                subtitle:
-                                    'Una selección basada en tu actividad.',
-                                color: AppColors.lavender,
-                                icon: Icons.auto_awesome_outlined,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 42),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Artistas que podrías seguir',
-                              style: AppTextStyles.sectionTitle,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Conecta con personas que comparten tus gustos.',
-                              style: AppTextStyles.secondary,
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Ver más  →',
-                            style: AppTextStyles.button.copyWith(
-                              color: AppColors.ink,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Wrap(
-                      spacing: 28,
-                      runSpacing: 18,
-                      children: [
-                        _ArtistSuggestion(
-                          name: 'Phoebe Bridgers',
-                          followers: '2.1 M seguidores',
-                        ),
-                        _ArtistSuggestion(
-                          name: 'Billie Eilish',
-                          followers: '6.3 M seguidores',
-                        ),
-                        _ArtistSuggestion(
-                          name: 'Clairo',
-                          followers: '1.8 M seguidores',
-                        ),
-                        _ArtistSuggestion(
-                          name: 'Mac DeMarco',
-                          followers: '3.4 M seguidores',
-                        ),
-                        _ArtistSuggestion(
-                          name: 'Lana Del Rey',
-                          followers: '7.1 M seguidores',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-                  ],
+                suffixIcon: IconButton(
+                  onPressed: _searchMusic,
+                  icon: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 18),
+
+            const Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                MusicFilterChip(
+                  label: 'Todo',
+                  selected: true,
+                ),
+                MusicFilterChip(
+                  label: 'Artistas',
+                ),
+                MusicFilterChip(
+                  label: 'Álbumes',
+                ),
+                MusicFilterChip(
+                  label: 'Canciones',
+                ),
+                MusicFilterChip(
+                  label: 'Playlists',
+                ),
+                MusicFilterChip(
+                  label: 'Géneros',
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 30),
+
+            if (_hasSearched)
+              _buildSearchSection(),
+
+            if (_hasSearched)
+              const SizedBox(height: 38),
+
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Mis músicas reseñadas',
+                  style: AppTextStyles.sectionTitle,
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'Ver más  →',
+                    style:
+                        AppTextStyles.button.copyWith(
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: reviewedMusic
+                    .map(
+                      (item) => Padding(
+                        padding:
+                            const EdgeInsets.only(
+                          right: 16,
+                        ),
+                        child:
+                            MusicCard(item: item),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+
+            const SizedBox(height: 44),
+
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Explora para ti',
+                      style:
+                          AppTextStyles.sectionTitle,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Recomendaciones basadas en tus gustos.',
+                      style:
+                          AppTextStyles.secondary,
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'Ver más  →',
+                    style:
+                        AppTextStyles.button.copyWith(
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final availableWidth =
+                    constraints.maxWidth;
+
+                final cardWidth =
+                    (availableWidth - 48) / 4;
+
+                return Row(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: cardWidth,
+                      child: const ExploreCard(
+                        title: 'Indie para tu día',
+                        subtitle:
+                            'Artistas y álbumes que te pueden gustar.',
+                        color: AppColors.lilac,
+                        icon:
+                            Icons.album_outlined,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    SizedBox(
+                      width: cardWidth,
+                      child: const ExploreCard(
+                        title: 'Clásicos',
+                        subtitle:
+                            'Álbumes que todos deberían escuchar.',
+                        color: AppColors.mint,
+                        icon: Icons
+                            .library_music_outlined,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    SizedBox(
+                      width: cardWidth,
+                      child: const ExploreCard(
+                        title:
+                            'Nuevos lanzamientos',
+                        subtitle:
+                            'Lo más reciente en la escena musical.',
+                        color:
+                            AppColors.butter,
+                        icon: Icons
+                            .headphones_outlined,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    SizedBox(
+                      width: cardWidth,
+                      child: const ExploreCard(
+                        title: 'Hecho para ti',
+                        subtitle:
+                            'Una selección basada en tu actividad.',
+                        color:
+                            AppColors.lavender,
+                        icon: Icons
+                            .auto_awesome_outlined,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 42),
+
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Artistas que podrías seguir',
+                      style:
+                          AppTextStyles.sectionTitle,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Conecta con personas que comparten tus gustos.',
+                      style:
+                          AppTextStyles.secondary,
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'Ver más  →',
+                    style:
+                        AppTextStyles.button.copyWith(
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 18),
+
+            const Wrap(
+              spacing: 28,
+              runSpacing: 18,
+              children: [
+                _ArtistSuggestion(
+                  name: 'Phoebe Bridgers',
+                  followers: '2.1 M seguidores',
+                ),
+                _ArtistSuggestion(
+                  name: 'Billie Eilish',
+                  followers: '6.3 M seguidores',
+                ),
+                _ArtistSuggestion(
+                  name: 'Clairo',
+                  followers: '1.8 M seguidores',
+                ),
+                _ArtistSuggestion(
+                  name: 'Mac DeMarco',
+                  followers: '3.4 M seguidores',
+                ),
+                _ArtistSuggestion(
+                  name: 'Lana Del Rey',
+                  followers: '7.1 M seguidores',
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSearchSection() {
     if (_isLoading) {

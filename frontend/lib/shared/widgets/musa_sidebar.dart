@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../core/routes/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 
 class MusaSidebar extends StatelessWidget {
-  const MusaSidebar({super.key});
+  final AppSection selectedSection;
+  final ValueChanged<AppSection> onSectionSelected;
+
+  const MusaSidebar({
+    super.key,
+    required this.selectedSection,
+    required this.onSectionSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,46 +27,86 @@ class MusaSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Musa',
+            'musa.',
             style: AppTextStyles.logo,
           ),
 
           const SizedBox(height: 38),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.home_outlined,
             title: 'Inicio',
+            selected:
+                selectedSection == AppSection.home,
+            onTap: () {
+              onSectionSelected(AppSection.home);
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.explore_outlined,
             title: 'Explorar',
+            selected:
+                selectedSection == AppSection.explore,
+            onTap: () {
+              onSectionSelected(AppSection.explore);
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.music_note_outlined,
             title: 'Música',
-            selected: true,
+            selected:
+                selectedSection == AppSection.music,
+            onTap: () {
+              onSectionSelected(AppSection.music);
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.menu_book_outlined,
             title: 'Libros',
+            selected:
+                selectedSection == AppSection.books,
+            onTap: () {
+              onSectionSelected(AppSection.books);
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.people_outline,
             title: 'Social',
+            selected:
+                selectedSection == AppSection.social,
+            onTap: () {
+              onSectionSelected(AppSection.social);
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.forum_outlined,
             title: 'Comunidades',
+            selected:
+                selectedSection ==
+                    AppSection.communities,
+            onTap: () {
+              onSectionSelected(
+                AppSection.communities,
+              );
+            },
           ),
 
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.bar_chart_outlined,
             title: 'Estadísticas',
+            selected:
+                selectedSection ==
+                    AppSection.statistics,
+            onTap: () {
+              onSectionSelected(
+                AppSection.statistics,
+              );
+            },
           ),
 
           const Spacer(),
@@ -69,22 +117,14 @@ class MusaSidebar extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.lavender,
-                child: Icon(
-                  Icons.person,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Mi perfil',
-                style: AppTextStyles.navigation,
-              ),
-            ],
+          _SidebarItem(
+            icon: Icons.person_outline,
+            title: 'Mi perfil',
+            selected:
+                selectedSection == AppSection.profile,
+            onTap: () {
+              onSectionSelected(AppSection.profile);
+            },
           ),
         ],
       ),
@@ -96,28 +136,34 @@ class _SidebarItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final bool selected;
+  final VoidCallback onTap;
 
   const _SidebarItem({
     required this.icon,
     required this.title,
-    this.selected = false,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final foreground =
-        selected ? AppColors.ink : AppColors.warmWhite;
+        selected
+            ? AppColors.ink
+            : AppColors.warmWhite;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 7),
       decoration: BoxDecoration(
-        color: selected
-            ? AppColors.lavender
-            : Colors.transparent,
+        color:
+            selected
+                ? AppColors.lavender
+                : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         dense: true,
+        onTap: onTap,
         leading: Icon(
           icon,
           color: foreground,

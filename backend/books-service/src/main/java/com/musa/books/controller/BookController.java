@@ -34,6 +34,15 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
+    @GetMapping("/explore")
+    public ResponseEntity<List<BookSearchResultDto>> getExploreBooks() {
+
+        List<BookSearchResultDto> books =
+                openLibraryService.getExploreBooks();
+
+        return ResponseEntity.ok(books);
+    }
+
     @GetMapping("/{externalId}")
     public ResponseEntity<BookDetailDto> getBookDetail(
             @PathVariable String externalId
