@@ -44,7 +44,7 @@ public class ReviewController {
 
     // Crear reseña
     @PostMapping("/{externalId}/reviews")
-    public ResponseEntity<Review> createReview(
+    public ResponseEntity<ReviewResponse> createReview(
             @PathVariable String externalId,
             @RequestParam UUID userId,
             @Valid@RequestBody ReviewRequest request
@@ -57,12 +57,12 @@ public class ReviewController {
                 request.getReviewText()
         );
 
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(toResponse(review));
     }
 
     // Actualizar reseña
     @PutMapping("/{externalId}/reviews")
-    public ResponseEntity<Review> updateReview(
+    public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable String externalId,
             @RequestParam UUID userId,
             @Valid @RequestBody ReviewRequest request
@@ -75,7 +75,7 @@ public class ReviewController {
                 request.getReviewText()
         );
 
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(toResponse(review));
     }
 
     // Eliminar reseña

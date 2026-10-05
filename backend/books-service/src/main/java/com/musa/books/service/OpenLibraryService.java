@@ -50,6 +50,41 @@ public class OpenLibraryService {
                 .toList();
     }
 
+    public List<BookSearchResultDto> getExploreBooks() {
+
+        OpenLibrarySearchResponse response = restClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/search.json")
+                        .queryParam(
+                                "q",
+                                "subject_key:fiction"
+                        )
+                        .queryParam(
+                                "sort",
+                                "editions"
+                        )
+                        .queryParam(
+                                "limit",
+                                12
+                        )
+                        .build()
+                )
+                .retrieve()
+                .body(OpenLibrarySearchResponse.class);
+
+        if (response == null
+                || response.getDocs() == null) {
+
+            return Collections.emptyList();
+        }
+
+        return response.getDocs()
+                .stream()
+                .map(this::toSearchResult)
+                .toList();
+    }
+
     private BookSearchResultDto toSearchResult(OpenLibraryBookDto book) {
 
         String externalId = null;

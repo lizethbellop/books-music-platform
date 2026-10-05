@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../core/routes/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../models/musa_destination.dart';
 import 'musa_profile_avatar.dart';
 
 class MusaSidebar extends StatelessWidget {
-  final MusaDestination selectedDestination;
-  final ValueChanged<MusaDestination>? onDestinationSelected;
-  final String? profilePictureUrl;
+  final AppSection selectedSection;
+  final ValueChanged<AppSection> onSectionSelected;
 
   const MusaSidebar({
     super.key,
-    this.selectedDestination = MusaDestination.music,
-    this.onDestinationSelected,
-    this.profilePictureUrl,
+    required this.selectedSection,
+    required this.onSectionSelected,
   });
 
   @override
@@ -29,36 +28,87 @@ class MusaSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _MusaLogo(),
+          Text(
+            'musa.',
+            style: AppTextStyles.logo,
+          ),
 
           const SizedBox(height: 38),
 
           _SidebarItem(
             icon: Icons.home_outlined,
             title: 'Inicio',
-            selected: selectedDestination == MusaDestination.home,
-            onTap: () => _select(MusaDestination.home),
+            selected:
+                selectedSection == AppSection.home,
+            onTap: () {
+              onSectionSelected(AppSection.home);
+            },
           ),
 
           _SidebarItem(
             icon: Icons.explore_outlined,
             title: 'Explorar',
-            selected: selectedDestination == MusaDestination.explore,
-            onTap: () => _select(MusaDestination.explore),
+            selected:
+                selectedSection == AppSection.explore,
+            onTap: () {
+              onSectionSelected(AppSection.explore);
+            },
           ),
 
           _SidebarItem(
             icon: Icons.music_note_outlined,
             title: 'Música',
-            selected: selectedDestination == MusaDestination.music,
-            onTap: () => _select(MusaDestination.music),
+            selected:
+                selectedSection == AppSection.music,
+            onTap: () {
+              onSectionSelected(AppSection.music);
+            },
           ),
 
           _SidebarItem(
             icon: Icons.menu_book_outlined,
             title: 'Libros',
-            selected: selectedDestination == MusaDestination.books,
-            onTap: () => _select(MusaDestination.books),
+            selected:
+                selectedSection == AppSection.books,
+            onTap: () {
+              onSectionSelected(AppSection.books);
+            },
+          ),
+
+          _SidebarItem(
+            icon: Icons.people_outline,
+            title: 'Social',
+            selected:
+                selectedSection == AppSection.social,
+            onTap: () {
+              onSectionSelected(AppSection.social);
+            },
+          ),
+
+          _SidebarItem(
+            icon: Icons.forum_outlined,
+            title: 'Comunidades',
+            selected:
+                selectedSection ==
+                    AppSection.communities,
+            onTap: () {
+              onSectionSelected(
+                AppSection.communities,
+              );
+            },
+          ),
+
+          _SidebarItem(
+            icon: Icons.bar_chart_outlined,
+            title: 'Estadísticas',
+            selected:
+                selectedSection ==
+                    AppSection.statistics,
+            onTap: () {
+              onSectionSelected(
+                AppSection.statistics,
+              );
+            },
           ),
 
           const Spacer(),
@@ -67,28 +117,14 @@ class MusaSidebar extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          Padding(
-            padding: const EdgeInsets.only(bottom: 7),
-            child: Material(
-              color: selectedDestination == MusaDestination.profile
-                  ? AppColors.lilac
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _select(MusaDestination.profile),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: Center(
-                    child: MusaProfileAvatar(
-                      imageUrl: profilePictureUrl,
-                      radius: 19,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          _SidebarItem(
+            icon: Icons.person_outline,
+            title: 'Mi perfil',
+            selected:
+                selectedSection == AppSection.profile,
+            onTap: () {
+              onSectionSelected(AppSection.profile);
+            },
           ),
         ],
       ),
@@ -134,10 +170,18 @@ class _SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground =
+        selected
+            ? AppColors.ink
+            : AppColors.warmWhite;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 7),
       decoration: BoxDecoration(
-        color: selected ? AppColors.lilac : Colors.transparent,
+        color:
+            selected
+                ? AppColors.lavender
+                : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

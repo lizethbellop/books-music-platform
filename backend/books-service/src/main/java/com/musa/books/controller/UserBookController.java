@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,15 +36,30 @@ public class UserBookController {
                         request.getStatus()
                 );
 
-        UserBookResponse response =
-                new UserBookResponse(
-                        userBook.getBook().getExternalId(),
-                        userBook.getBook().getTitle(),
-                        userBook.getBook().getAuthor(),
-                        userBook.getBook().getCoverUrl(),
-                        userBook.getReadingStatus()
-                );
+        return ResponseEntity.ok(toResponse(userBook));
+    }
 
-        return ResponseEntity.ok(response);
+    @GetMapping("/library")
+    public ResponseEntity<List<UserBookResponse>> getLibrary(
+            @RequestParam UUID userId
+    ) {
+
+        List<UserBookResponse> library =
+                userBookService.getBooksByUser(userId)
+                        .stream()
+                        .map(this::toResponse)
+                        .toList();
+
+        return ResponseEntity.ok(library);
+    }
+
+    private UserBookResponse toResponse(UserBook userBook) {
+        return new UserBookResponse(
+                userBook.getBook().getExternalId(),
+                userBook.getBook().getTitle(),
+                userBook.getBook().getAuthor(),
+                userBook.getBook().getCoverUrl(),
+                userBook.getReadingStatus()
+        );
     }
 }
