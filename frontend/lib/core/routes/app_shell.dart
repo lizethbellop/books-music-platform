@@ -41,58 +41,33 @@ class _AppShellState extends State<AppShell> {
         return const BooksHomePage();
 
       case AppSection.home:
-        return _placeholderPage(
-          'Inicio',
-          Icons.home_outlined,
-        );
+        return _placeholderPage('Inicio', Icons.home_outlined);
 
       case AppSection.explore:
-        return _placeholderPage(
-          'Explorar',
-          Icons.explore_outlined,
-        );
+        return _placeholderPage('Explorar', Icons.explore_outlined);
 
       case AppSection.social:
-        return _placeholderPage(
-          'Social',
-          Icons.people_outline,
-        );
+        return _placeholderPage('Social', Icons.people_outline);
 
       case AppSection.communities:
-        return _placeholderPage(
-          'Comunidades',
-          Icons.forum_outlined,
-        );
+        return _placeholderPage('Comunidades', Icons.forum_outlined);
 
       case AppSection.statistics:
-        return _placeholderPage(
-          'Estadísticas',
-          Icons.bar_chart_outlined,
-        );
+        return _placeholderPage('Estadísticas', Icons.bar_chart_outlined);
 
       case AppSection.profile:
-        return _placeholderPage(
-          'Mi perfil',
-          Icons.person_outline,
-        );
+        return _placeholderPage('Mi perfil', Icons.person_outline);
     }
   }
 
-  Widget _placeholderPage(
-    String title,
-    IconData icon,
-  ) {
+  Widget _placeholderPage(String title, IconData icon) {
     return Container(
       color: AppColors.cream,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 56,
-              color: AppColors.ink,
-            ),
+            Icon(icon, size: 56, color: AppColors.ink),
             const SizedBox(height: 16),
             Text(
               title,
@@ -117,9 +92,7 @@ class _AppShellState extends State<AppShell> {
             selectedSection: _selectedSection,
             onSectionSelected: _changeSection,
           ),
-          Expanded(
-            child: _buildCurrentPage(),
-          ),
+          Expanded(child: _buildCurrentPage()),
         ],
       ),
     );
