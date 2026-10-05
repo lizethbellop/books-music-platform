@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../models/musa_destination.dart';
+import 'musa_profile_avatar.dart';
 
 class MusaSidebar extends StatelessWidget {
   final AppSection selectedSection;
@@ -18,11 +20,11 @@ class MusaSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 230,
-      color: AppColors.ink,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 28,
+      decoration: const BoxDecoration(
+        color: AppColors.warmWhite,
+        border: Border(right: BorderSide(color: AppColors.border)),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -111,9 +113,7 @@ class MusaSidebar extends StatelessWidget {
 
           const Spacer(),
 
-          const Divider(
-            color: Colors.white24,
-          ),
+          const Divider(color: AppColors.border),
 
           const SizedBox(height: 12),
 
@@ -127,6 +127,29 @@ class MusaSidebar extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _select(MusaDestination destination) {
+    onDestinationSelected?.call(destination);
+  }
+}
+
+class _MusaLogo extends StatelessWidget {
+  const _MusaLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 150,
+      height: 55,
+      child: ClipRect(
+        child: Image.asset(
+          'assets/images/musa_logo.png',
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+        ),
       ),
     );
   }
@@ -166,12 +189,13 @@ class _SidebarItem extends StatelessWidget {
         onTap: onTap,
         leading: Icon(
           icon,
-          color: foreground,
+          color: AppColors.ink,
         ),
         title: Text(
           title,
           style: AppTextStyles.navigation.copyWith(
-            color: foreground,
+            color: AppColors.ink,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),

@@ -1,117 +1,74 @@
 import 'package:flutter/material.dart';
-import 'music_detail_page.dart';
 
+import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 //import '../../../../shared/widgets/musa_sidebar.dart';
 
 import '../../data/music_item.dart';
 import '../../data/models/music_search_item.dart';
+import '../../data/music_item.dart';
 import '../../data/services/music_api_service.dart';
-
 import '../widgets/explore_card.dart';
 import '../widgets/music_card.dart';
 import '../widgets/music_filter_chip.dart';
+import 'music_detail_page.dart';
 
 class MusicHomePage extends StatefulWidget {
-  const MusicHomePage({super.key});
+  final String userId;
+
+  const MusicHomePage({
+    super.key,
+    required this.userId,
+  });
 
   @override
-  State<MusicHomePage> createState() => _MusicHomePageState();
+  State<MusicHomePage> createState() =>
+      _MusicHomePageState();
 }
 
 class _MusicHomePageState extends State<MusicHomePage> {
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController =
+      TextEditingController();
 
-  final MusicApiService _musicApiService = MusicApiService();
+  final MusicApiService _musicApiService =
+      MusicApiService();
 
   List<MusicSearchItem> _searchResults = [];
 
+  List<MusicItem> _reviewedMusic = [];
+
   bool _isLoading = false;
-  String? _errorMessage;
   bool _hasSearched = false;
+  bool _isLoadingReviewedMusic = true;
 
-  static const reviewedMusic = [
-    MusicItem(
-      spotifyId: 'mock_cris_mj',
-      title: 'Déjame Pensar',
-      artist: 'Cris MJ',
-      imageUrl: '',
-      type: MusicType.album,
-      rating: 5,
-      reviewDate: '12 ene 2025',
-    ),
-    MusicItem(
-      spotifyId: 'mock_soda_stereo',
-      title: '2K16',
-      artist: 'Omar Courtz',
-      imageUrl: '',
-      type: MusicType.album,
-      rating: 5,
-      reviewDate: '3 mar 2025',
-    ),
-    MusicItem(
-      spotifyId: 'mock_zoe',
-      title: 'Corazón Delator',
-      artist: 'Soda Stereo',
-      imageUrl: '',
-      type: MusicType.album,
-      rating: 4,
-      reviewDate: '28 feb 2025',
-    ),
-    MusicItem(
-      spotifyId: 'mock_zoe_2',
-      title: 'He Wont Go',
-      artist: 'Adele',
-      imageUrl: '',
-      type: MusicType.album,
-      rating: 3.5,
-      reviewDate: '10 ene 2025',
-    ),
-    MusicItem(
-      spotifyId: 'mock_soda_2',
-      title: 'Reptilectric',
-      artist: 'Zoé',
-      imageUrl: '',
-      type: MusicType.album,
-      rating: 4.5,
-      reviewDate: '5 abr 2025',
-    ),
-  ];
+  String? _errorMessage;
 
-  Future<void> _searchMusic() async {
-    final query = _searchController.text.trim();
+  @override
+  void initState() {
+    super.initState();
+    _loadReviewedMusic();
+  }
 
-    if (query.isEmpty) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _hasSearched = true;
-    });
-
+  Future<void> _loadReviewedMusic() async {
     try {
-      final results = await _musicApiService.searchMusic(query);
+      final reviewed =
+          await _musicApiService.getReviewedMusic(
+        userId: 1,
+      );
 
       if (!mounted) return;
 
       setState(() {
-        _searchResults = results;
+        _reviewedMusic = reviewed;
+        _isLoadingReviewedMusic = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _searchResults = [];
-        _errorMessage = 'No se pudo realizar la búsqueda.';
-      });
-    } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
+        _reviewedMusic = [];
+        _isLoadingReviewedMusic = false;
       });
     }
   }
@@ -120,6 +77,83 @@ class _MusicHomePageState extends State<MusicHomePage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchMusic() async {
+    final query =
+        _searchController.text.trim();
+
+    if (query.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _hasSearched = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results =
+          await _musicApiService.searchMusic(
+        query,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _searchResults = results;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _searchResults = [];
+        _errorMessage =
+            'No se pudo realizar la búsqueda';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _selectDestination(
+    MusaDestination destination,
+  ) {
+    switch (destination) {
+      case MusaDestination.music:
+        return;
+
+      case MusaDestination.home:
+        Navigator.of(context)
+            .pushReplacementNamed(
+          AppRoutes.home,
+        );
+        return;
+
+      case MusaDestination.profile:
+        Navigator.of(context)
+            .pushReplacementNamed(
+          AppRoutes.profile,
+        );
+        return;
+
+      case MusaDestination.explore:
+      case MusaDestination.books:
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Esta sección se conectará próximamente',
+            ),
+          ),
+        );
+        return;
+    }
   }
 
 @override
@@ -300,7 +334,23 @@ Widget build(BuildContext context) {
                         icon:
                             Icons.album_outlined,
                       ),
-                    ),
+                      MusicFilterChip(
+                        label: 'Artistas',
+                      ),
+                      MusicFilterChip(
+                        label: 'Álbumes',
+                      ),
+                      MusicFilterChip(
+                        label: 'Canciones',
+                      ),
+                      MusicFilterChip(
+                        label: 'Playlists',
+                      ),
+                      MusicFilterChip(
+                        label: 'Géneros',
+                      ),
+                    ],
+                  ),
 
                     const SizedBox(width: 16),
 
@@ -315,6 +365,8 @@ Widget build(BuildContext context) {
                             .library_music_outlined,
                       ),
                     ),
+                    _buildSearchSection(),
+                  ],
 
                     const SizedBox(width: 16),
 
@@ -428,8 +480,13 @@ Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: CircularProgressIndicator(),
+          padding:
+              EdgeInsets.all(24),
+          child:
+              CircularProgressIndicator(
+            color:
+                AppColors.lavender,
+          ),
         ),
       );
     }
@@ -437,40 +494,236 @@ Widget build(BuildContext context) {
     if (_errorMessage != null) {
       return Text(
         _errorMessage!,
-        style: AppTextStyles.secondary,
+        style:
+            AppTextStyles.secondary,
       );
     }
 
     if (_searchResults.isEmpty) {
       return Text(
-        'No se encontraron resultados.',
-        style: AppTextStyles.secondary,
+        'No se encontraron resultados',
+        style:
+            AppTextStyles.secondary,
       );
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
-        Text(
-          'Resultados',
-          style: AppTextStyles.sectionTitle,
+        const _SectionTitle(
+          title: 'Resultados',
+          subtitle:
+              'Contenido encontrado en Spotify',
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(
+          height: 16,
+        ),
 
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: _searchResults.map((item) {
-            return _SearchResultCard(item: item);
-          }).toList(),
+        LayoutBuilder(
+          builder: (
+            context,
+            constraints,
+          ) {
+            final width =
+                constraints.maxWidth;
+
+            final columns =
+                width >= 1000
+                    ? 4
+                    : width >= 650
+                        ? 3
+                        : width >= 420
+                            ? 2
+                            : 1;
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics:
+                  const NeverScrollableScrollPhysics(),
+              itemCount:
+                  _searchResults.length,
+              gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount:
+                    columns,
+                crossAxisSpacing:
+                    16,
+                mainAxisSpacing:
+                    16,
+                childAspectRatio:
+                    0.72,
+              ),
+              itemBuilder: (
+                context,
+                index,
+              ) {
+                return _SearchResultCard(
+                  item:
+                      _searchResults[
+                          index],
+                );
+              },
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class _SearchResultCard extends StatelessWidget {
+class _MusaWordmark
+    extends StatelessWidget {
+  final double width;
+
+  const _MusaWordmark({
+    required this.width,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return SizedBox(
+      width: width,
+      height: 50,
+      child: ClipRect(
+        child: Image.asset(
+          'assets/images/musa_logo.png',
+          fit: BoxFit.cover,
+          alignment:
+              Alignment.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle
+    extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _SectionTitle({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style:
+              AppTextStyles.sectionTitle,
+        ),
+        const SizedBox(
+          height: 4,
+        ),
+        Text(
+          subtitle,
+          style:
+              AppTextStyles.secondary,
+        ),
+      ],
+    );
+  }
+}
+
+class _ExploreGrid
+    extends StatelessWidget {
+  const _ExploreGrid();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    const cards = [
+      ExploreCard(
+        title:
+            'Indie para tu día',
+        subtitle:
+            'Artistas y álbumes que te pueden gustar',
+        color:
+            AppColors.lilac,
+        icon:
+            Icons.album_outlined,
+      ),
+      ExploreCard(
+        title: 'Clásicos',
+        subtitle:
+            'Álbumes que todos deberían escuchar',
+        color:
+            AppColors.mint,
+        icon:
+            Icons.library_music_outlined,
+      ),
+      ExploreCard(
+        title:
+            'Nuevos lanzamientos',
+        subtitle:
+            'Lo más reciente de la escena musical',
+        color:
+            AppColors.butter,
+        icon:
+            Icons.headphones_outlined,
+      ),
+      ExploreCard(
+        title:
+            'Hecho para ti',
+        subtitle:
+            'Una selección basada en tu actividad',
+        color:
+            AppColors.lavender,
+        icon:
+            Icons.auto_awesome_outlined,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (
+        context,
+        constraints,
+      ) {
+        final width =
+            constraints.maxWidth;
+
+        final columns =
+            width >= 1100
+                ? 4
+                : width >= 650
+                    ? 2
+                    : 1;
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics:
+              const NeverScrollableScrollPhysics(),
+          crossAxisCount:
+              columns,
+          crossAxisSpacing:
+              16,
+          mainAxisSpacing:
+              16,
+          childAspectRatio:
+              columns == 1
+                  ? 1.8
+                  : 1.45,
+          children: cards,
+        );
+      },
+    );
+  }
+}
+
+class _SearchResultCard
+    extends StatelessWidget {
   final MusicSearchItem item;
 
   const _SearchResultCard({
@@ -478,158 +731,211 @@ class _SearchResultCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => MusicDetailPage(
+  Widget build(
+    BuildContext context,
+  ) {
+    final hasImage =
+        item.imageUrl
+                ?.trim()
+                .isNotEmpty ==
+            true;
+
+    return Card(
+      clipBehavior:
+          Clip.antiAlias,
+      color:
+          AppColors.warmWhite,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context)
+              .push(
+            MaterialPageRoute(
+              builder: (
+                context,
+              ) {
+                return MusicDetailPage(
                   item: item,
+                );
+              },
+            ),
+          );
+        },
+        child: Padding(
+          padding:
+              const EdgeInsets
+                  .all(14),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment
+                    .start,
+            children: [
+              Expanded(
+                child:
+                    AspectRatio(
+                  aspectRatio: 1,
+                  child:
+                      hasImage
+                          ? Image
+                              .network(
+                              item
+                                  .imageUrl!,
+                              fit: BoxFit
+                                  .cover,
+                              errorBuilder:
+                                  (
+                                _,
+                                _,
+                                _,
+                              ) {
+                                return const _ImagePlaceholder();
+                              },
+                            )
+                          : const _ImagePlaceholder(),
                 ),
               ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: item.imageUrl != null &&
-                          item.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          item.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) {
-                            return _imagePlaceholder();
-                          },
-                        )
-                      : _imagePlaceholder(),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              Text(
+                item.name,
+                maxLines: 2,
+                overflow:
+                    TextOverflow
+                        .ellipsis,
+                style:
+                    AppTextStyles
+                        .cardTitle,
+              ),
+
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                item.artistName ??
+                    '',
+                maxLines: 1,
+                overflow:
+                    TextOverflow
+                        .ellipsis,
+                style:
+                    AppTextStyles
+                        .secondary,
+              ),
+
+              const SizedBox(
+                height: 6,
+              ),
+
+              Text(
+                _typeText(
+                  item.contentType,
                 ),
-
-                const SizedBox(height: 12),
-
-                Text(
-                  item.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.cardTitle,
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  item.artistName ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.secondary,
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  _typeText(item.contentType),
-                  style: AppTextStyles.secondary.copyWith(
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
+                style:
+                    AppTextStyles
+                        .secondary,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _imagePlaceholder() {
-    return Container(
-      color: AppColors.lilac,
-      child: const Center(
-        child: Icon(
-          Icons.music_note,
-          size: 44,
-          color: AppColors.ink,
-        ),
-      ),
-    );
-  }
-
-  String _typeText(String type) {
-    switch (type) {
-      case 'SONG':
-        return 'Canción';
-      case 'ALBUM':
-        return 'Álbum';
-      case 'ARTIST':
-        return 'Artista';
-      default:
-        return type;
-    }
+  String _typeText(
+    String type,
+  ) {
+    return switch (type) {
+      'SONG' => 'Canción',
+      'ALBUM' => 'Álbum',
+      'ARTIST' => 'Artista',
+      _ => type,
+    };
   }
 }
 
-class _ArtistSuggestion extends StatelessWidget {
+class _ImagePlaceholder
+    extends StatelessWidget {
+  const _ImagePlaceholder();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      color:
+          AppColors.lilac,
+      child:
+          const Center(
+        child: Icon(
+          Icons.music_note,
+          size: 44,
+          color:
+              AppColors.ink,
+        ),
+      ),
+    );
+  }
+}
+
+class _ArtistSuggestion
+    extends StatelessWidget {
   final String name;
-  final String followers;
 
   const _ArtistSuggestion({
     required this.name,
-    required this.followers,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 210,
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      width: 220,
+      padding:
+          const EdgeInsets
+              .all(14),
+      decoration:
+          BoxDecoration(
+        color:
+            AppColors.warmWhite,
+        borderRadius:
+            BorderRadius
+                .circular(16),
+        border:
+            Border.all(
+          color:
+              AppColors.border,
+        ),
+      ),
       child: Row(
         children: [
           const CircleAvatar(
-            radius: 26,
-            backgroundColor: AppColors.sage,
+            radius: 25,
+            backgroundColor:
+                AppColors.sage,
             child: Icon(
-              Icons.person,
-              color: AppColors.warmWhite,
+              Icons.person_outline,
+              color:
+                  AppColors
+                      .warmWhite,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(
+            width: 12,
+          ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  followers,
-                  style: AppTextStyles.secondary.copyWith(
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 30),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                    ),
-                    side: const BorderSide(
-                      color: AppColors.border,
-                    ),
-                  ),
-                  child: const Text('Seguir'),
-                ),
-              ],
+            child: Text(
+              name,
+              maxLines: 2,
+              overflow:
+                  TextOverflow
+                      .ellipsis,
+              style:
+                  AppTextStyles
+                      .cardTitle,
             ),
           ),
         ],

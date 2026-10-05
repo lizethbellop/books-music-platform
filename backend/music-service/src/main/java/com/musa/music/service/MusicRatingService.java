@@ -2,6 +2,7 @@ package com.musa.music.service;
 
 import com.musa.music.dto.MusicRatingRequest;
 import com.musa.music.entity.MusicContent;
+import com.musa.music.entity.MusicContentType;
 import com.musa.music.entity.MusicRating;
 import com.musa.music.repository.MusicRatingRepository;
 import org.springframework.stereotype.Service;
@@ -47,5 +48,29 @@ public class MusicRatingService {
         rating.setRating(request.rating());
 
         return musicRatingRepository.save(rating);
+    }
+
+    public Double getUserRating(
+            Long userId,
+            String spotifyId,
+            MusicContentType contentType
+    ) {
+        MusicContent content =
+                musicContentService.findExisting(
+                        spotifyId,
+                        contentType
+                );
+
+        if (content == null) {
+            return 0.0;
+        }
+
+        return musicRatingRepository
+                .findByUserIdAndMusicContentId(
+                        userId,
+                        content.getId()
+                )
+                .map(MusicRating::getRating)
+                .orElse(0.0);
     }
 }

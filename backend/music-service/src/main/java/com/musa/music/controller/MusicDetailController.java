@@ -2,19 +2,19 @@ package com.musa.music.controller;
 
 import com.musa.music.dto.MusicDetailResponse;
 import com.musa.music.entity.MusicContentType;
-import com.musa.music.spotify.SpotifyDetailService;
+import com.musa.music.service.MusicDetailService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/music")
 public class MusicDetailController {
 
-    private final SpotifyDetailService spotifyDetailService;
+    private final MusicDetailService musicDetailService;
 
     public MusicDetailController(
-            SpotifyDetailService spotifyDetailService
+            MusicDetailService musicDetailService
     ) {
-        this.spotifyDetailService = spotifyDetailService;
+        this.musicDetailService = musicDetailService;
     }
 
     @GetMapping("/{type}/{spotifyId}")
@@ -26,7 +26,7 @@ public class MusicDetailController {
         MusicContentType contentType =
                 MusicContentType.valueOf(type.toUpperCase());
 
-        return spotifyDetailService.getDetail(
+        return musicDetailService.getDetail(
                 contentType,
                 spotifyId
         );
