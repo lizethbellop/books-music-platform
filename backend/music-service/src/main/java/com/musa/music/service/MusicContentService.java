@@ -40,4 +40,16 @@ public class MusicContentService {
                     return musicContentRepository.save(content);
                 });
     }
+
+    public MusicContent findExisting(
+            String spotifyId,
+            MusicContentType contentType
+    ) {
+        return musicContentRepository
+                .findBySpotifyIdAndContentType(
+                        spotifyId,
+                        contentType
+                )
+                .orElse(null);
+        }
 }

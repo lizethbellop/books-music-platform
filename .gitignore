@@ -190,3 +190,22 @@ compose.override.yml
 
 test-results/
 reports/
+
+### Local environment variables ###
+.env
+
+# Recommendations - training datasets
+backend/recommendations-service/data/raw/*
+backend/recommendations-service/data/processed/*
+
+# Keep directory structure
+!backend/recommendations-service/data/raw/.gitkeep
+!backend/recommendations-service/data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
