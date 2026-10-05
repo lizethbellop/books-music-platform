@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/books/presentation/pages/books_home_page.dart';
 import '../../features/music/presentation/pages/music_home_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../shared/widgets/musa_sidebar.dart';
 
 enum AppSection {
@@ -17,14 +18,21 @@ enum AppSection {
 }
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  static const defaultUserId = String.fromEnvironment(
+    'MUSA_USER_ID',
+    defaultValue: '550e8400-e29b-41d4-a716-446655440000',
+  );
+
+  final String userId;
+
+  const AppShell({super.key, this.userId = defaultUserId});
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  AppSection _selectedSection = AppSection.books;
+  AppSection _selectedSection = AppSection.home;
 
   void _changeSection(AppSection section) {
     setState(() {
@@ -41,7 +49,7 @@ class _AppShellState extends State<AppShell> {
         return const BooksHomePage();
 
       case AppSection.home:
-        return _placeholderPage('Inicio', Icons.home_outlined);
+        return _homeMessage();
 
       case AppSection.explore:
         return _placeholderPage('Explorar', Icons.explore_outlined);
@@ -56,8 +64,24 @@ class _AppShellState extends State<AppShell> {
         return _placeholderPage('Estadísticas', Icons.bar_chart_outlined);
 
       case AppSection.profile:
-        return _placeholderPage('Mi perfil', Icons.person_outline);
+        return ProfilePage(userId: widget.userId, embedded: true);
     }
+  }
+
+  Widget _homeMessage() {
+    return const ColoredBox(
+      color: AppColors.cream,
+      child: Center(
+        child: Text(
+          'Bienvenida a Musa.',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _placeholderPage(String title, IconData icon) {
