@@ -16,4 +16,8 @@ public interface MusicReviewRepository extends JpaRepository<MusicReview, Long> 
     List<MusicReview> findByMusicContentId(
             Long musicContentId
     );
+
+    List<MusicReview> findByUserIdOrderByCreatedAtDesc(
+            Long userId
+    );
 }

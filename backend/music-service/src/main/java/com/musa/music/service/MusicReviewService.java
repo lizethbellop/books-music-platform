@@ -7,6 +7,8 @@ import com.musa.music.entity.MusicContentType;
 import com.musa.music.entity.MusicReview;
 import com.musa.music.repository.MusicReviewRepository;
 import org.springframework.stereotype.Service;
+import com.musa.music.dto.ReviewedMusicResponse;
+import com.musa.music.repository.MusicRatingRepository;
 
 import java.util.List;
 
@@ -15,13 +17,16 @@ public class MusicReviewService {
 
     private final MusicReviewRepository musicReviewRepository;
     private final MusicContentService musicContentService;
+    private final MusicRatingRepository musicRatingRepository;
 
     public MusicReviewService(
-            MusicReviewRepository musicReviewRepository,
-            MusicContentService musicContentService
+                MusicReviewRepository musicReviewRepository,
+                MusicContentService musicContentService,
+                MusicRatingRepository musicRatingRepository
     ) {
         this.musicReviewRepository = musicReviewRepository;
         this.musicContentService = musicContentService;
+        this.musicRatingRepository = musicRatingRepository;
     }
 
     public MusicReview createReview(MusicReviewRequest request) {
@@ -120,7 +125,7 @@ public class MusicReviewService {
     public List<MusicReview> getReviewsBySpotify(
                 String spotifyId,
                 MusicContentType contentType
-        ) {
+    ) {
         MusicContent content = musicContentService
                 .findExisting(
                         spotifyId,
@@ -135,5 +140,36 @@ public class MusicReviewService {
                 .findByMusicContentId(
                         content.getId()
                 );
-        }
+     }
+
+     public List<ReviewedMusicResponse> getReviewedMusicByUser(
+                Long userId
+     ) {
+        return musicReviewRepository
+                .findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(review -> {
+
+                        MusicContent content = review.getMusicContent();
+
+                        Double rating = musicRatingRepository
+                                .findByUserIdAndMusicContentId(
+                                        userId,
+                                        content.getId()
+                                )
+                                .map(musicRating -> musicRating.getRating())
+                                .orElse(0.0);
+
+                        return new ReviewedMusicResponse(
+                                content.getSpotifyId(),
+                                content.getContentType(),
+                                content.getName(),
+                                content.getArtistName(),
+                                content.getImageUrl(),
+                                rating,
+                                review.getCreatedAt()
+                        );
+                })
+                .toList();
+     }
 }

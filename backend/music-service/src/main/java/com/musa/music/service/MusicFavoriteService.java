@@ -5,6 +5,7 @@ import com.musa.music.entity.MusicContent;
 import com.musa.music.entity.MusicFavorite;
 import com.musa.music.repository.MusicFavoriteRepository;
 import org.springframework.stereotype.Service;
+import com.musa.music.entity.MusicContentType;
 
 @Service
 public class MusicFavoriteService {
@@ -68,5 +69,27 @@ public class MusicFavoriteService {
                         );
 
         musicFavoriteRepository.delete(favorite);
+    }
+
+    public boolean isFavorite(
+                Long userId,
+                String spotifyId,
+                MusicContentType contentType
+    ) {
+        MusicContent content =
+                musicContentService.findExisting(
+                        spotifyId,
+                        contentType
+                );
+
+        if (content == null) {
+                return false;
+        }
+
+        return musicFavoriteRepository
+                .existsByUserIdAndMusicContentId(
+                        userId,
+                        content.getId()
+                );
     }
 }

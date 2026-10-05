@@ -2,9 +2,10 @@ package com.musa.music.controller;
 
 import com.musa.music.dto.MusicReviewRequest;
 import com.musa.music.dto.MusicReviewUpdateRequest;
+import com.musa.music.dto.ReviewedMusicResponse;
+import com.musa.music.entity.MusicContentType;
 import com.musa.music.entity.MusicReview;
 import com.musa.music.service.MusicReviewService;
-import com.musa.music.entity.MusicContentType;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,17 +57,17 @@ public class MusicReviewController {
     }
 
     @GetMapping("/user/{userId}/content/{musicContentId}")
-        public MusicReview getUserReview(
-                @PathVariable Long userId,
-                @PathVariable Long musicContentId
-        ) {
-            return musicReviewService.getUserReview(
-                    userId,
-                    musicContentId
-            );
-        }
+    public MusicReview getUserReview(
+            @PathVariable Long userId,
+            @PathVariable Long musicContentId
+    ) {
+        return musicReviewService.getUserReview(
+                userId,
+                musicContentId
+        );
+    }
 
-        @GetMapping("/user/{userId}")
+    @GetMapping("/user/{userId}")
     public MusicReview getUserReviewBySpotify(
             @PathVariable Long userId,
             @RequestParam String spotifyId,
@@ -80,13 +81,20 @@ public class MusicReviewController {
     }
 
     @GetMapping("/content")
-     public List<MusicReview> getReviewsBySpotify(
-                @RequestParam String spotifyId,
-                @RequestParam MusicContentType contentType
-     ) {
+    public List<MusicReview> getReviewsBySpotify(
+            @RequestParam String spotifyId,
+            @RequestParam MusicContentType contentType
+    ) {
         return musicReviewService.getReviewsBySpotify(
                 spotifyId,
                 contentType
         );
-     }
+    }
+
+    @GetMapping("/user/{userId}/reviewed")
+    public List<ReviewedMusicResponse> getReviewedMusic(
+            @PathVariable Long userId
+    ) {
+        return musicReviewService.getReviewedMusicByUser(userId);
+    }
 }
