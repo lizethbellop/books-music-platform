@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Autenticación", description = "Endpoints para la gestión de autenticación, acceso y recuperación de cuentas")
 
 @RestController
+@CrossOrigin(origins = "*") // <--- Permite peticiones desde cualquier origen (Flutter Web)
 @RequestMapping("/api/v1/auth")
 public class RegisterController {
 
