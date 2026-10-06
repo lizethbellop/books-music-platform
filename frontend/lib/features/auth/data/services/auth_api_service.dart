@@ -7,6 +7,7 @@ import '../models/login_request_model.dart';
 import '../models/message_response_model.dart';
 import '../models/register_request_model.dart';
 import '../models/reset_password_request_model.dart';
+import '../models/verify_token_request_model.dart';
 import '../models/token_request_model.dart';
 
 class AuthApiException implements Exception {
@@ -95,6 +96,29 @@ class AuthApiService {
         return MessageResponseModel.fromJson(data);
       } else {
         final errorMessage = data['message'] ?? 'Error al solicitar la recuperación de contraseña';
+        throw AuthApiException(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      if (e is AuthApiException) rethrow;
+      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
+    }
+  }
+
+  /// Endpoint: POST /api/v1/auth/verify-token
+  Future<MessageResponseModel> verifyToken(VerifyTokenRequestModel request) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/verify-token'),
+        headers: _headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if (response.statusCode == 200) {
+        return MessageResponseModel.fromJson(data);
+      } else {
+        final errorMessage = data['message'] ?? 'Token inválido o expirado';
         throw AuthApiException(errorMessage, statusCode: response.statusCode);
       }
     } catch (e) {
