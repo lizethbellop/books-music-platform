@@ -7,7 +7,10 @@ import '../models/music_search_item.dart';
 import '../music_item.dart';
 
 class MusicApiService {
-  static const String baseUrl = 'http://localhost:8080/api/music';
+  static const String baseUrl = String.fromEnvironment(
+    'MUSIC_API_URL',
+    defaultValue: 'http://localhost:8080/api/music',
+  );
 
   Future<List<MusicSearchItem>> searchMusic(String query) async {
     final uri = Uri.parse(
