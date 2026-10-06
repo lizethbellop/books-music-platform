@@ -2,6 +2,7 @@ package com.musa.books.service;
 
 import com.musa.books.entity.Book;
 import com.musa.books.entity.FavoriteBook;
+import com.musa.books.exception.ResourceNotFoundException;
 import com.musa.books.repository.FavoriteBookRepository;
 
 import org.springframework.stereotype.Service;
@@ -53,4 +54,21 @@ public class FavoriteBookService {
     public List<FavoriteBook> getFavoritesByUser(UUID userId) {
         return favoriteBookRepository.findByUserId(userId);
     }
+
+    public void removeFavorite(UUID userId, String externalId) {
+        Book book = bookService.getOrCreateBook(externalId);
+
+        FavoriteBook favorite = favoriteBookRepository
+                .findByUserIdAndBook_Id(
+                        userId,
+                        book.getId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "El libro no está en favoritos"
+                        )
+                );
+
+        favoriteBookRepository.delete(favorite);
+        }
 }

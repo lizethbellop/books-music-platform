@@ -11,15 +11,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /** Controlador REST para el restablecimiento de contraseñas mediante token. */
 @Tag(name = "Autenticación", description = "Endpoints para la gestión de autenticación, acceso y recuperación de cuentas")
 
 @RestController
+@CrossOrigin(origins = "*") // <--- Permite peticiones desde cualquier origen (Flutter Web)
 @RequestMapping("/api/v1/auth")
 public class ResetPasswordController {
 

@@ -14,6 +14,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * Configuración central de la seguridad web del sistema.
@@ -35,13 +40,15 @@ public class SecurityConfig {
      * e inyecta el filtro de autenticación JWT antes del filtro de usuario/contraseña.
      *
      * @param http Instancia de {@link HttpSecurity} para construir la configuración.
-     * @param jwtAuthFilter Filtro personalizado que intercepta y valida los tokens JWT.
+     * @param jwtAuthFilter Filtro personalizado que intercepta y válida los tokens JWT.
      * @return La cadena de filtros de seguridad construida.
-     * @throws Exception Si ocurre algún error en la construcción de la configuración de seguridad.
+     * @throws Exception Sí ocurre algún error en la construcción de la configuración de seguridad.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         http
+                // Habilitar CORS con la configuración definida abajo
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable) // Desactivado para APIs REST Stateless
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos de autenticación y documentación
@@ -60,6 +67,21 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Define las políticas de CORS permitiendo peticiones desde Flutter Web.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("*")); // Permite peticiones de cualquier origen (Flutter Web)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     /**

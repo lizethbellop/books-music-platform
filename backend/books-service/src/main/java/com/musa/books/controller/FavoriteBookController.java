@@ -42,6 +42,16 @@ public class FavoriteBookController {
         return ResponseEntity.ok(favorites);
     }
 
+    @DeleteMapping("/{externalId}/favorites")
+    public ResponseEntity<Void> removeFavorite(
+            @PathVariable String externalId,
+            @RequestParam UUID userId
+    ) {
+        favoriteBookService.removeFavorite(userId, externalId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private FavoriteBookResponse toResponse(FavoriteBook favorite) {
         return new FavoriteBookResponse(
                 favorite.getBook().getExternalId(),

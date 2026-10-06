@@ -13,8 +13,9 @@ import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
+  final bool embedded;
 
-  const ProfilePage({super.key, required this.userId});
+  const ProfilePage({super.key, required this.userId, this.embedded = false});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -106,6 +107,10 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
     );
+
+    if (widget.embedded) {
+      return ColoredBox(color: AppColors.cream, child: profileContent);
+    }
 
     return MusaNavigationShell(
       key: _navigationShellKey,

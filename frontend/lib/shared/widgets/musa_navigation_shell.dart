@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/routes/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/profile/data/models/profile_model.dart';
 import '../../features/profile/data/services/profile_api_service.dart';
@@ -72,9 +73,15 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
                   ? Row(
                       children: [
                         MusaSidebar(
-                          selectedDestination: widget.selectedDestination,
-                          onDestinationSelected: widget.onDestinationSelected,
-                          profilePictureUrl: profilePictureUrl,
+                          selectedSection: _toAppSection(
+                            widget.selectedDestination,
+                          ),
+                          onSectionSelected: (section) {
+                            final destination = _toMusaDestination(section);
+                            if (destination != null) {
+                              widget.onDestinationSelected(destination);
+                            }
+                          },
                         ),
                         Expanded(child: widget.child),
                       ],
@@ -92,5 +99,28 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
         );
       },
     );
+  }
+
+  AppSection _toAppSection(MusaDestination destination) {
+    return switch (destination) {
+      MusaDestination.home => AppSection.home,
+      MusaDestination.explore => AppSection.explore,
+      MusaDestination.music => AppSection.music,
+      MusaDestination.books => AppSection.books,
+      MusaDestination.profile => AppSection.profile,
+    };
+  }
+
+  MusaDestination? _toMusaDestination(AppSection section) {
+    return switch (section) {
+      AppSection.home => MusaDestination.home,
+      AppSection.explore => MusaDestination.explore,
+      AppSection.music => MusaDestination.music,
+      AppSection.books => MusaDestination.books,
+      AppSection.profile => MusaDestination.profile,
+      AppSection.social ||
+      AppSection.communities ||
+      AppSection.statistics => null,
+    };
   }
 }

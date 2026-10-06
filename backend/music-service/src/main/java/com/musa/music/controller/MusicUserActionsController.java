@@ -2,6 +2,7 @@ package com.musa.music.controller;
 
 import com.musa.music.dto.MusicFavoriteRequest;
 import com.musa.music.dto.MusicRatingRequest;
+import com.musa.music.entity.MusicContentType;
 import com.musa.music.entity.MusicFavorite;
 import com.musa.music.entity.MusicRating;
 import com.musa.music.service.MusicFavoriteService;
@@ -34,6 +35,21 @@ public class MusicUserActionsController {
         );
     }
 
+    @GetMapping("/ratings/user/{userId}")
+    public ResponseEntity<Double> getUserRating(
+            @PathVariable Long userId,
+            @RequestParam String spotifyId,
+            @RequestParam MusicContentType contentType
+    ) {
+        return ResponseEntity.ok(
+                musicRatingService.getUserRating(
+                        userId,
+                        spotifyId,
+                        contentType
+                )
+        );
+    }
+
     @PostMapping("/favorites")
     public ResponseEntity<MusicFavorite> addFavorite(
             @Valid @RequestBody MusicFavoriteRequest request
@@ -54,5 +70,20 @@ public class MusicUserActionsController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/favorites/user/{userId}")
+        public ResponseEntity<Boolean> isFavorite(
+                @PathVariable Long userId,
+                @RequestParam String spotifyId,
+                @RequestParam MusicContentType contentType
+        ) {
+        return ResponseEntity.ok(
+                musicFavoriteService.isFavorite(
+                        userId,
+                        spotifyId,
+                        contentType
+                )
+        );
     }
 }
