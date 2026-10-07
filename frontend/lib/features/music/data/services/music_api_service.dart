@@ -185,6 +185,27 @@ class MusicApiService {
     }
   }
 
+  Future<void> removeFavorite({
+    required int userId,
+    required MusicDetail detail,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/favorites'
+      '?userId=$userId'
+      '&spotifyId=${Uri.encodeQueryComponent(detail.spotifyId)}'
+      '&contentType=${Uri.encodeQueryComponent(detail.contentType)}',
+    );
+
+    final response = await http.delete(uri);
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 204) {
+      throw Exception(
+        'No se pudo quitar de favoritos',
+      );
+    }
+  }
+
   Future<void> createReview({
     required int userId,
     required MusicDetail detail,

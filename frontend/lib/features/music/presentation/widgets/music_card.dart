@@ -111,10 +111,15 @@ class MusicCard extends StatelessWidget {
                   children: List.generate(
                     5,
                     (index) {
+                      final fullValue =
+                          (index + 1).toDouble();
+
                       return Icon(
-                        index < item.rating.round()
+                        item.rating >= fullValue
                             ? Icons.star
-                            : Icons.star_border,
+                            : item.rating >= fullValue - 0.5
+                                ? Icons.star_half
+                                : Icons.star_border,
                         size: 18,
                         color: AppColors.butter,
                       );
