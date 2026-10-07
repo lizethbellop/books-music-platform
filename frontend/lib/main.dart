@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/routes/app_routes.dart';
 import 'core/routes/app_shell.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
@@ -27,13 +28,13 @@ class MusaApp extends StatelessWidget {
         AppRoutes.register: (context) => const RegisterScreen(),
         // AppRoutes.home: (context) => const HomeScreen(),
         AppRoutes.home: (context) {
-          return const HomePage(userId: developmentUserId);
+          return const HomePage(userId: AppShell.defaultUserId);
         },
         AppRoutes.music: (context) {
-          return const MusicHomePage(userId: developmentUserId);
+          return const MusicHomePage();
         },
         AppRoutes.profile: (context) {
-          return const ProfilePage(userId: developmentUserId);
+      return const ProfilePage(userId: AppShell.defaultUserId);
         },
       },
     );
