@@ -62,29 +62,41 @@ public class ReviewService {
         return reviewRepository.save(review);
     }
 
-    // CU-16 Crear reseña
-    public Review createReview(
-            UUID userId,
-            String externalId,
-            BigDecimal rating,
-            String reviewText
-    ) {
+        public Review createReview(
+                UUID userId,
+                String externalId,
+                BigDecimal rating,
+                String reviewText
+        ) {
 
         validateRating(rating);
 
         Book book = bookService.getOrCreateBook(externalId);
 
-        boolean alreadyExists = reviewRepository
+        var existingReview = reviewRepository
                 .findByUserIdAndBook_Id(
                         userId,
                         book.getId()
-                )
-                .isPresent();
+                );
 
-        if (alreadyExists) {
-            throw new IllegalStateException(
-                    "El usuario ya tiene una reseña para este libro"
-            );
+        if (existingReview.isPresent()) {
+
+                Review review = existingReview.get();
+
+                boolean alreadyHasText =
+                        review.getReviewText() != null
+                                && !review.getReviewText().isBlank();
+
+                if (alreadyHasText) {
+                throw new IllegalStateException(
+                        "El usuario ya tiene una reseña para este libro"
+                );
+                }
+
+                review.setRating(rating);
+                review.setReviewText(reviewText);
+
+                return reviewRepository.save(review);
         }
 
         Review review = Review.builder()
@@ -95,7 +107,7 @@ public class ReviewService {
                 .build();
 
         return reviewRepository.save(review);
-    }
+        }
 
     // CU-15 Actualizar reseña
     public Review updateReview(

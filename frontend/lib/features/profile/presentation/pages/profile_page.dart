@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/musa_destination.dart';
 import '../../../../shared/widgets/musa_navigation_shell.dart';
+import '../../../../shared/widgets/musa_profile_avatar.dart';
 import '../../data/exceptions/profile_api_exception.dart';
 import '../../data/models/profile_model.dart';
 import '../../data/services/profile_api_service.dart';
@@ -13,8 +14,13 @@ import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
+  final bool embedded;
 
-  const ProfilePage({super.key, required this.userId});
+  const ProfilePage({
+    super.key,
+    required this.userId,
+    this.embedded = false,
+  });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -33,7 +39,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadProfile() {
-    _profileFuture = _profileApiService.getOwnProfile(userId: widget.userId);
+    _profileFuture = _profileApiService.getOwnProfile(
+      userId: widget.userId,
+    );
   }
 
   void _retry() {
@@ -47,7 +55,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final wasUpdated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) {
-          return EditProfilePage(userId: widget.userId, profile: profile);
+          return EditProfilePage(
+            userId: widget.userId,
+            profile: profile,
+          );
         },
       ),
     );
@@ -61,6 +72,7 @@ class _ProfilePageState extends State<ProfilePage> {
     switch (destination) {
       case MusaDestination.profile:
         return;
+
       case MusaDestination.home:
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);
         return;
@@ -73,7 +85,9 @@ class _ProfilePageState extends State<ProfilePage> {
       case MusaDestination.books:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Esta sección se conectará próximamente.'),
+            content: Text(
+              'Esta sección se conectará próximamente.',
+            ),
           ),
         );
         return;
@@ -88,12 +102,17 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: AppColors.lavender),
+              child: CircularProgressIndicator(
+                color: AppColors.lavender,
+              ),
             );
           }
 
           if (snapshot.hasError) {
-            return _ProfileErrorView(error: snapshot.error!, onRetry: _retry);
+            return _ProfileErrorView(
+              error: snapshot.error!,
+              onRetry: _retry,
+            );
           }
 
           final profile = snapshot.data!;
@@ -106,6 +125,13 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
     );
+
+    if (widget.embedded) {
+      return ColoredBox(
+        color: AppColors.cream,
+        child: profileContent,
+      );
+    }
 
     return MusaNavigationShell(
       key: _navigationShellKey,
@@ -207,7 +233,10 @@ class _ProfileHeader extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.ink,
         side: const BorderSide(color: AppColors.ink),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 16,
+        ),
       ),
     );
 
@@ -215,7 +244,10 @@ class _ProfileHeader extends StatelessWidget {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ProfileAvatar(imageUrl: profile.profilePictureUrl, radius: 72),
+          _ProfileAvatar(
+            imageUrl: profile.profilePictureUrl,
+            radius: 72,
+          ),
           const SizedBox(width: 32),
           Expanded(child: information),
           const SizedBox(width: 24),
@@ -230,7 +262,10 @@ class _ProfileHeader extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProfileAvatar(imageUrl: profile.profilePictureUrl, radius: 52),
+            _ProfileAvatar(
+              imageUrl: profile.profilePictureUrl,
+              radius: 52,
+            ),
             const SizedBox(width: 20),
             Expanded(child: information),
           ],
@@ -246,19 +281,16 @@ class _ProfileAvatar extends StatelessWidget {
   final String? imageUrl;
   final double radius;
 
-  const _ProfileAvatar({required this.imageUrl, required this.radius});
+  const _ProfileAvatar({
+    required this.imageUrl,
+    required this.radius,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = imageUrl?.trim().isNotEmpty == true;
-
-    return CircleAvatar(
+    return MusaProfileAvatar(
+      imageUrl: imageUrl,
       radius: radius,
-      backgroundColor: AppColors.mint,
-      backgroundImage: hasImage ? NetworkImage(imageUrl!) : null,
-      child: hasImage
-          ? null
-          : Icon(Icons.person_outline, size: radius, color: AppColors.ink),
     );
   }
 }
@@ -266,7 +298,9 @@ class _ProfileAvatar extends StatelessWidget {
 class _PrivacyChip extends StatelessWidget {
   final bool isPrivate;
 
-  const _PrivacyChip({required this.isPrivate});
+  const _PrivacyChip({
+    required this.isPrivate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +310,9 @@ class _PrivacyChip extends StatelessWidget {
         size: 18,
         color: AppColors.ink,
       ),
-      label: Text(isPrivate ? 'Perfil privado' : 'Perfil público'),
+      label: Text(
+        isPrivate ? 'Perfil privado' : 'Perfil público',
+      ),
       backgroundColor: AppColors.mint,
       side: BorderSide.none,
     );
@@ -286,7 +322,9 @@ class _PrivacyChip extends StatelessWidget {
 class _MusaWordmark extends StatelessWidget {
   final double width;
 
-  const _MusaWordmark({required this.width});
+  const _MusaWordmark({
+    required this.width,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +346,10 @@ class _ProfileErrorView extends StatelessWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  const _ProfileErrorView({required this.error, required this.onRetry});
+  const _ProfileErrorView({
+    required this.error,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +363,11 @@ class _ProfileErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.ink),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.ink,
+            ),
             const SizedBox(height: 16),
             Text(
               message,

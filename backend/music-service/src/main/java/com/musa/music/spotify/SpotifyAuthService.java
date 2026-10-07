@@ -26,7 +26,19 @@ public class SpotifyAuthService {
 
     private final RestClient restClient = RestClient.create();
 
+    public boolean isConfigured() {
+        return clientId != null
+                && !clientId.isBlank()
+                && clientSecret != null
+                && !clientSecret.isBlank();
+    }
+
     public String getAccessToken() {
+        if (!isConfigured()) {
+                throw new IllegalStateException(
+                        "Spotify no está configurado en este entorno"
+                );
+        }
 
         String credentials = clientId + ":" + clientSecret;
 

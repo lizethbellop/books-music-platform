@@ -20,7 +20,7 @@ import '../models/list_element_model.dart';
 class ProfileApiService {
   static const String baseUrl = String.fromEnvironment(
     'PROFILE_API_URL',
-    defaultValue: 'http://localhost:8080/api/profiles',
+    defaultValue: 'http://localhost:8082/api/profiles',
   );
 
   Future<ProfileModel> getOwnProfile({required String userId}) async {
