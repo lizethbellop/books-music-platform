@@ -17,14 +17,21 @@ enum AppSection {
 }
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  static const defaultUserId = String.fromEnvironment(
+    'MUSA_USER_ID',
+    defaultValue: '550e8400-e29b-41d4-a716-446655440000',
+  );
+
+  final String userId;
+
+  const AppShell({super.key, this.userId = defaultUserId});
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  AppSection _selectedSection = AppSection.books;
+  AppSection _selectedSection = AppSection.home;
 
   void _changeSection(AppSection section) {
     setState(() {
@@ -43,58 +50,49 @@ class _AppShellState extends State<AppShell> {
         return const BooksHomePage();
 
       case AppSection.home:
-        return _placeholderPage(
-          'Inicio',
-          Icons.home_outlined,
-        );
+        return _homeMessage();
 
       case AppSection.explore:
-        return _placeholderPage(
-          'Explorar',
-          Icons.explore_outlined,
-        );
+        return _placeholderPage('Explorar', Icons.explore_outlined);
 
       case AppSection.social:
-        return _placeholderPage(
-          'Social',
-          Icons.people_outline,
-        );
+        return _placeholderPage('Social', Icons.people_outline);
 
       case AppSection.communities:
-        return _placeholderPage(
-          'Comunidades',
-          Icons.forum_outlined,
-        );
+        return _placeholderPage('Comunidades', Icons.forum_outlined);
 
       case AppSection.statistics:
-        return _placeholderPage(
-          'Estadísticas',
-          Icons.bar_chart_outlined,
-        );
+        return _placeholderPage('Estadísticas', Icons.bar_chart_outlined);
 
       case AppSection.profile:
-        return _placeholderPage(
-          'Mi perfil',
-          Icons.person_outline,
-        );
+        return ProfilePage(userId: widget.userId, embedded: true);
     }
   }
 
-  Widget _placeholderPage(
-    String title,
-    IconData icon,
-  ) {
+  Widget _homeMessage() {
+    return const ColoredBox(
+      color: AppColors.cream,
+      child: Center(
+        child: Text(
+          'Bienvenida a Musa.',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholderPage(String title, IconData icon) {
     return Container(
       color: AppColors.cream,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 56,
-              color: AppColors.ink,
-            ),
+            Icon(icon, size: 56, color: AppColors.ink),
             const SizedBox(height: 16),
             Text(
               title,
@@ -119,9 +117,7 @@ class _AppShellState extends State<AppShell> {
             selectedSection: _selectedSection,
             onSectionSelected: _changeSection,
           ),
-          Expanded(
-            child: _buildCurrentPage(),
-          ),
+          Expanded(child: _buildCurrentPage()),
         ],
       ),
     );

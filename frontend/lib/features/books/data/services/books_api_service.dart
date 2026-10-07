@@ -9,7 +9,10 @@ import '../models/user_book.dart';
 import '../models/favorite_book.dart';
 
 class BooksApiService {
-  static const String baseUrl = 'http://localhost:8080/books';
+  static const String baseUrl = String.fromEnvironment(
+    'BOOKS_API_URL',
+    defaultValue: 'http://localhost:8081/books',
+  );
 
   Future<List<BookSearchItem>> searchBooks(String query) async {
     final uri = Uri.parse(

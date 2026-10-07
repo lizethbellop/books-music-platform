@@ -7,7 +7,10 @@ import '../models/music_search_item.dart';
 import '../music_item.dart';
 
 class MusicApiService {
-  static const String baseUrl = 'http://localhost:8080/api/music';
+  static const String baseUrl = String.fromEnvironment(
+    'MUSIC_API_URL',
+    defaultValue: 'http://localhost:8080/api/music',
+  );
 
   Future<List<MusicSearchItem>> searchMusic(String query) async {
     final uri = Uri.parse(
@@ -178,6 +181,27 @@ class MusicApiService {
         response.statusCode != 201) {
       throw Exception(
         'No se pudo agregar a favoritos',
+      );
+    }
+  }
+
+  Future<void> removeFavorite({
+    required int userId,
+    required MusicDetail detail,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/favorites'
+      '?userId=$userId'
+      '&spotifyId=${Uri.encodeQueryComponent(detail.spotifyId)}'
+      '&contentType=${Uri.encodeQueryComponent(detail.contentType)}',
+    );
+
+    final response = await http.delete(uri);
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 204) {
+      throw Exception(
+        'No se pudo quitar de favoritos',
       );
     }
   }

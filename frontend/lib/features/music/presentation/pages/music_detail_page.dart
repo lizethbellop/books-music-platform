@@ -100,7 +100,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'No se pudo cargar el detalle musical.';
+        _errorMessage =
+            'No se pudo cargar el detalle musical.';
         _isLoading = false;
       });
     }
@@ -121,10 +122,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       setState(() {
         _reviews = reviews;
       });
-    } catch (_) {
-      // El detalle sigue disponible aunque falle
-      // la actualización de reseñas.
-    }
+    } catch (_) {}
   }
 
   Future<void> _saveRating(
@@ -153,7 +151,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       if (!mounted) return;
 
       _showMessage(
-        'Calificación guardada',
+        'Calificación guardada: ${newRating.toStringAsFixed(1)}',
       );
     } catch (_) {
       if (!mounted) return;
@@ -174,39 +172,50 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     }
   }
 
-  Future<void> _addFavorite() async {
+  Future<void> _toggleFavorite() async {
     final detail = _detail;
 
-    if (detail == null ||
-        _isSavingFavorite ||
-        _isFavorite) {
+    if (detail == null || _isSavingFavorite) {
       return;
     }
+
+    final previousValue = _isFavorite;
 
     setState(() {
       _isSavingFavorite = true;
     });
 
     try {
-      await _musicApiService.addFavorite(
-        userId: 1,
-        detail: detail,
-      );
+      if (_isFavorite) {
+        await _musicApiService.removeFavorite(
+          userId: 1,
+          detail: detail,
+        );
+      } else {
+        await _musicApiService.addFavorite(
+          userId: 1,
+          detail: detail,
+        );
+      }
 
       if (!mounted) return;
 
       setState(() {
-        _isFavorite = true;
+        _isFavorite = !previousValue;
       });
 
       _showMessage(
-        'Agregado a favoritos',
+        _isFavorite
+            ? 'Agregado a favoritos'
+            : 'Eliminado de favoritos',
       );
     } catch (_) {
       if (!mounted) return;
 
       _showMessage(
-        'No se pudo agregar a favoritos',
+        previousValue
+            ? 'No se pudo quitar de favoritos'
+            : 'No se pudo agregar a favoritos',
       );
     } finally {
       if (mounted) {
@@ -604,38 +613,68 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
           ),
 
           Wrap(
-            spacing: 2,
-            children:
-                List.generate(
+            spacing: 4,
+            children: List.generate(
               5,
               (index) {
-                final value =
-                    (index + 1)
-                        .toDouble();
+                final fullValue =
+                    (index + 1).toDouble();
 
-                return IconButton(
-                  tooltip:
-                      '${index + 1} estrellas',
-                  onPressed:
+                return GestureDetector(
+                  onTapDown:
                       _isSavingRating
                           ? null
-                          : () =>
+                          : (details) {
+                              final halfValue =
+                                  index == 0
+                                      ? 1.0
+                                      : index +
+                                          0.5;
+
+                              final newRating =
+                                  details.localPosition.dx <
+                                          17
+                                      ? halfValue
+                                      : fullValue;
+
                               _saveRating(
-                                value,
-                              ),
-                  icon: Icon(
-                    value <= _rating
-                        ? Icons.star
-                        : Icons
-                            .star_border,
-                    size: 34,
-                    color:
-                        AppColors
-                            .butter,
+                                newRating,
+                              );
+                            },
+                  child: SizedBox(
+                    width: 34,
+                    height: 40,
+                    child: Icon(
+                      _rating >=
+                              fullValue
+                          ? Icons.star
+                          : _rating >=
+                                  fullValue -
+                                      0.5
+                              ? Icons
+                                  .star_half
+                              : Icons
+                                  .star_border,
+                      size: 34,
+                      color:
+                          AppColors.butter,
+                    ),
                   ),
                 );
               },
             ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            _rating == 0
+                ? 'Sin calificación'
+                : '${_rating.toStringAsFixed(1)} / 5',
+            style:
+                AppTextStyles.secondary,
           ),
 
           if (_isSavingRating)
@@ -656,10 +695,9 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       child:
           FilledButton.icon(
         onPressed:
-            _isSavingFavorite ||
-                    _isFavorite
+            _isSavingFavorite
                 ? null
-                : _addFavorite,
+                : _toggleFavorite,
         style:
             FilledButton.styleFrom(
           backgroundColor:
@@ -677,7 +715,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
           _isSavingFavorite
               ? 'Guardando...'
               : _isFavorite
-                  ? 'En favoritos'
+                  ? 'Quitar de favoritos'
                   : 'Agregar a favoritos',
         ),
       ),
@@ -950,8 +988,7 @@ class _ErrorView
     return Center(
       child: Padding(
         padding:
-            const EdgeInsets
-                .all(
+            const EdgeInsets.all(
           24,
         ),
         child: Column(

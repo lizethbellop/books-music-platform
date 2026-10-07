@@ -59,18 +59,20 @@ public class MusicUserActionsController {
         );
     }
 
-    @DeleteMapping("/favorites/{musicContentId}")
-    public ResponseEntity<Void> removeFavorite(
-            @PathVariable Long musicContentId,
-            @RequestParam Long userId
-    ) {
+    @DeleteMapping("/favorites")
+        public ResponseEntity<Void> removeFavorite(
+                @RequestParam Long userId,
+                @RequestParam String spotifyId,
+                @RequestParam MusicContentType contentType
+        ) {
         musicFavoriteService.removeFavorite(
                 userId,
-                musicContentId
+                spotifyId,
+                contentType
         );
 
         return ResponseEntity.noContent().build();
-    }
+        }
 
     @GetMapping("/favorites/user/{userId}")
         public ResponseEntity<Boolean> isFavorite(

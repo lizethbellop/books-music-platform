@@ -2,10 +2,10 @@ package com.musa.music.service;
 
 import com.musa.music.dto.MusicFavoriteRequest;
 import com.musa.music.entity.MusicContent;
+import com.musa.music.entity.MusicContentType;
 import com.musa.music.entity.MusicFavorite;
 import com.musa.music.repository.MusicFavoriteRepository;
 import org.springframework.stereotype.Service;
-import com.musa.music.entity.MusicContentType;
 
 @Service
 public class MusicFavoriteService {
@@ -19,7 +19,8 @@ public class MusicFavoriteService {
     ) {
         this.musicFavoriteRepository =
                 musicFavoriteRepository;
-        this.musicContentService = musicContentService;
+        this.musicContentService =
+                musicContentService;
     }
 
     public MusicFavorite addFavorite(
@@ -54,27 +55,8 @@ public class MusicFavoriteService {
 
     public void removeFavorite(
             Long userId,
-            Long musicContentId
-    ) {
-        MusicFavorite favorite =
-                musicFavoriteRepository
-                        .findByUserIdAndMusicContentId(
-                                userId,
-                                musicContentId
-                        )
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Favorite not found"
-                                )
-                        );
-
-        musicFavoriteRepository.delete(favorite);
-    }
-
-    public boolean isFavorite(
-                Long userId,
-                String spotifyId,
-                MusicContentType contentType
+            String spotifyId,
+            MusicContentType contentType
     ) {
         MusicContent content =
                 musicContentService.findExisting(
@@ -83,7 +65,41 @@ public class MusicFavoriteService {
                 );
 
         if (content == null) {
-                return false;
+            throw new RuntimeException(
+                    "Music content not found"
+            );
+        }
+
+        MusicFavorite favorite =
+                musicFavoriteRepository
+                        .findByUserIdAndMusicContentId(
+                                userId,
+                                content.getId()
+                        )
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Favorite not found"
+                                )
+                        );
+
+        musicFavoriteRepository.delete(
+                favorite
+        );
+    }
+
+    public boolean isFavorite(
+            Long userId,
+            String spotifyId,
+            MusicContentType contentType
+    ) {
+        MusicContent content =
+                musicContentService.findExisting(
+                        spotifyId,
+                        contentType
+                );
+
+        if (content == null) {
+            return false;
         }
 
         return musicFavoriteRepository
