@@ -14,8 +14,6 @@ class BooksHomePage extends StatefulWidget {
   State<BooksHomePage> createState() => _BooksHomePageState();
 }
 
-
-
 class _BooksHomePageState extends State<BooksHomePage> {
   final TextEditingController _searchController =
       TextEditingController();
@@ -45,49 +43,60 @@ class _BooksHomePageState extends State<BooksHomePage> {
     _loadExploreBooks();
   }
 
-  Future<void> _searchBooks() async {
-    final query = _searchController.text.trim();
+Future<void> _searchBooks() async {
+  final query = _searchController.text.trim();
 
-    if (query.isEmpty) {
-      return;
-    }
-
+  if (query.isEmpty) {
     setState(() {
       _selectedFilter = 'Todos';
-      _isLoading = true;
-      _hasSearched = true;
+      _hasSearched = false;
+      _results = [];
       _errorMessage = null;
     });
 
-    try {
-      final results =
-          await _booksApiService.searchBooks(query);
-
-      if (!mounted) return;
-
-      setState(() {
-        _results = results;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      debugPrint(
-        'ERROR AL BUSCAR LIBROS: $e',
-      );
-
-      setState(() {
-        _results = [];
-        _errorMessage =
-            'No se pudo realizar la búsqueda.';
-      });
+    if (_exploreBooks.isEmpty) {
+      await _loadExploreBooks();
     }
+
+    return;
+  }
+
+  setState(() {
+    _selectedFilter = 'Todos';
+    _isLoading = true;
+    _hasSearched = true;
+    _errorMessage = null;
+  });
+
+  try {
+    final results =
+        await _booksApiService.searchBooks(query);
 
     if (!mounted) return;
 
     setState(() {
-      _isLoading = false;
+      _results = results;
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    debugPrint(
+      'ERROR AL BUSCAR LIBROS: $e',
+    );
+
+    setState(() {
+      _results = [];
+      _errorMessage =
+          'No se pudo realizar la búsqueda.';
     });
   }
+
+  if (!mounted) return;
+
+  setState(() {
+    _isLoading = false;
+  });
+}
 
 Future<void> _loadExploreBooks() async {
   setState(() {
@@ -127,18 +136,28 @@ Future<void> _loadExploreBooks() async {
   Future<void> _selectFilter(
     String filter,
   ) async {
+    if (filter == 'Todos') {
+      _searchController.clear();
+
+      setState(() {
+        _selectedFilter = 'Todos';
+        _hasSearched = false;
+        _results = [];
+        _errorMessage = null;
+        _isLoading = false;
+      });
+
+      if (_exploreBooks.isEmpty) {
+        await _loadExploreBooks();
+      }
+
+      return;
+    }
+
     setState(() {
       _selectedFilter = filter;
       _errorMessage = null;
     });
-
-    if (filter == 'Todos') {
-      setState(() {
-        _isLoading = false;
-      });
-
-      return;
-    }
 
     await _loadSelectedFilter();
   }

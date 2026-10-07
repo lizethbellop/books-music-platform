@@ -37,6 +37,12 @@ public class Book {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String descriptionOriginal;
+
+    @Column(columnDefinition = "TEXT")
+    private String descriptionEs;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

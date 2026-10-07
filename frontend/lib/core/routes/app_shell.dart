@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/books/presentation/pages/books_home_page.dart';
 import '../../features/music/presentation/pages/music_home_page.dart';
-import '../../shared/widgets/musa_sidebar.dart';
+import '../../shared/widgets/app_sidebar.dart';
 
 enum AppSection {
   home,
@@ -35,7 +35,9 @@ class _AppShellState extends State<AppShell> {
   Widget _buildCurrentPage() {
     switch (_selectedSection) {
       case AppSection.music:
-        return const MusicHomePage();
+        return const MusicHomePage(
+          userId: '550e8400-e29b-41d4-a716-446655440000',
+        );
 
       case AppSection.books:
         return const BooksHomePage();
@@ -113,7 +115,7 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       body: Row(
         children: [
-          MusaSidebar(
+          AppSidebar(
             selectedSection: _selectedSection,
             onSectionSelected: _changeSection,
           ),

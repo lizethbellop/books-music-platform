@@ -22,33 +22,113 @@ import java.util.List;
 public class OpenLibraryService {
 
     private final RestClient restClient;
+    private final TranslationService translationService;
 
-    public OpenLibraryService(RestClient restClient) {
+    public OpenLibraryService(
+            RestClient restClient,
+            TranslationService translationService
+    ) {
         this.restClient = restClient;
+        this.translationService = translationService;
     }
 
     public List<BookSearchResultDto> searchBooks(String query) {
 
-        OpenLibrarySearchResponse response = restClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/search.json")
-                        .queryParam("q", query)
-                        .queryParam("limit", 20)
-                        .build()
-                )
-                .retrieve()
-                .body(OpenLibrarySearchResponse.class);
-
-        if (response == null || response.getDocs() == null) {
+        if (query == null || query.isBlank()) {
             return Collections.emptyList();
         }
 
-        return response.getDocs()
+        String cleanQuery = query.trim();
+
+        /*
+        * 1. Primero intentamos la búsqueda tal como
+        * la escribió el usuario.
+        */
+        List<BookSearchResultDto> results =
+                searchOpenLibrary(cleanQuery);
+
+        if (!results.isEmpty()) {
+            return results;
+        }
+
+        /*
+        * 2. Si Open Library no encontró nada,
+        * traducimos la consulta al inglés.
+        */
+        try {
+
+            String englishQuery =
+                    translationService
+                            .translateToEnglish(cleanQuery);
+
+            /*
+            * Evitamos repetir exactamente
+            * la misma búsqueda.
+            */
+            if (englishQuery == null
+                    || englishQuery.isBlank()
+                    || englishQuery.equalsIgnoreCase(
+                            cleanQuery
+                    )) {
+
+                return results;
+            }
+
+            return searchOpenLibrary(
+                    englishQuery.trim()
+            );
+
+        } catch (Exception e) {
+
+            /*
+            * Si DeepL falla, la búsqueda original
+            * sigue siendo válida.
+            */
+            return results;
+        }
+    }
+
+    private List<BookSearchResultDto> searchOpenLibrary(
+            String query
+    ) {
+
+        OpenLibrarySearchResponse response =
+                restClient
+                        .get()
+                        .uri(uriBuilder ->
+                                uriBuilder
+                                        .path("/search.json")
+                                        .queryParam(
+                                                "q",
+                                                query
+                                        )
+                                        .queryParam(
+                                                "lang",
+                                                "es"
+                                        )
+                                        .queryParam(
+                                                "limit",
+                                                20
+                                        )
+                                        .build()
+                        )
+                        .retrieve()
+                        .body(
+                                OpenLibrarySearchResponse.class
+                        );
+
+        if (response == null
+                || response.getDocs() == null) {
+
+            return Collections.emptyList();
+        }
+
+        return response
+                .getDocs()
                 .stream()
                 .map(this::toSearchResult)
                 .toList();
-    }
+    }    
 
     public List<BookSearchResultDto> getExploreBooks() {
 
@@ -109,10 +189,28 @@ public class OpenLibraryService {
         );
     }
 
-    private String findCoverFromEditions(
-            String externalId,
-            String size
-    ) {
+private String findCoverFromEditions(
+        String externalId,
+        String size
+) {
+
+    if (externalId == null || externalId.isBlank()) {
+        return null;
+    }
+
+    /*
+     * Los IDs de work de Open Library normalmente
+     * terminan en W.
+     *
+     * Si viene un ID de edición (por ejemplo termina en M),
+     * no intentamos consultar /works/{id}/editions.json
+     * porque Open Library respondería 404.
+     */
+    if (!externalId.endsWith("W")) {
+        return null;
+    }
+
+    try {
 
         OpenLibraryEditionsResponse response = restClient
                 .get()
@@ -124,11 +222,13 @@ public class OpenLibraryService {
                 .retrieve()
                 .body(OpenLibraryEditionsResponse.class);
 
-        if (response == null || response.getEntries() == null) {
+        if (response == null
+                || response.getEntries() == null) {
             return null;
         }
 
-        for (OpenLibraryEditionDto edition : response.getEntries()) {
+        for (OpenLibraryEditionDto edition :
+                response.getEntries()) {
 
             if (edition.getCovers() != null
                     && !edition.getCovers().isEmpty()) {
@@ -143,8 +243,17 @@ public class OpenLibraryService {
             }
         }
 
+    } catch (Exception e) {
+
+        /*
+         * Una portada faltante no debe
+         * romper toda la búsqueda.
+         */
         return null;
     }
+
+    return null;
+}
 
         private String findCoverFromEditions(
             String externalId
@@ -198,11 +307,8 @@ public class OpenLibraryService {
 
     public BookDetailDto getBookDetail(String externalId) {
 
-        OpenLibraryWorkDto work = restClient
-                .get()
-                .uri("/works/{workId}.json", externalId)
-                .retrieve()
-                .body(OpenLibraryWorkDto.class);
+        OpenLibraryWorkDto work =
+                getWorkWithRetry(externalId);
 
         if (work == null) {
             throw new IllegalArgumentException(
@@ -210,19 +316,41 @@ public class OpenLibraryService {
             );
         }
 
-        List<String> authors = getAuthorNames(work);
+        /*
+        * Obtener los autores ya no podrá tumbar
+        * todo el detalle si Open Library falla
+        * únicamente en uno de ellos.
+        */
+        List<String> authors =
+                getAuthorNames(work);
 
-        String description = extractDescription(work);
+        String description =
+                cleanDescription(
+                        extractDescription(work)
+                );
 
         String coverUrl = null;
 
-        if (work.getCovers() != null && !work.getCovers().isEmpty()) {
+        /*
+        * Primero intentamos utilizar una portada
+        * que ya venga directamente en el work.
+        */
+        if (work.getCovers() != null
+                && !work.getCovers().isEmpty()) {
+
             coverUrl = buildCoverUrl(
                     work.getCovers().get(0),
                     "L"
             );
         }
 
+        /*
+        * Si no existe, buscamos una portada en
+        * las ediciones.
+        *
+        * findCoverFromEditions ya es tolerante
+        * a errores y devuelve null si falla.
+        */
         if (coverUrl == null) {
             coverUrl = findCoverFromEditions(
                     externalId,
@@ -241,49 +369,180 @@ public class OpenLibraryService {
         );
     }
 
-    private List<String> getAuthorNames(OpenLibraryWorkDto work) {
+    private OpenLibraryWorkDto getWorkWithRetry(
+            String externalId
+    ) {
 
-        List<String> authorNames = new ArrayList<>();
+        /*
+        * Hacemos máximo 2 intentos:
+        *
+        * intento 1 -> llamada normal
+        * intento 2 -> pequeño reintento automático
+        *
+        * Así el usuario no tiene que regresar
+        * y volver a tocar el libro manualmente.
+        */
+        for (int attempt = 1; attempt <= 2; attempt++) {
 
-        JsonNode authorsNode = work.getAuthors();
+            try {
 
-        if (authorsNode == null || !authorsNode.isArray()) {
+                return restClient
+                        .get()
+                        .uri(
+                                "/works/{workId}.json",
+                                externalId
+                        )
+                        .retrieve()
+                        .body(
+                                OpenLibraryWorkDto.class
+                        );
+
+            } catch (Exception e) {
+
+                System.err.println(
+                        "Error al consultar libro "
+                                + externalId
+                                + " en Open Library. Intento "
+                                + attempt
+                                + ": "
+                                + e.getMessage()
+                );
+
+                /*
+                * Si todavía nos queda un intento,
+                * esperamos un momento antes
+                * de repetir la solicitud.
+                */
+                if (attempt < 2) {
+
+                    try {
+                        Thread.sleep(400);
+                    } catch (InterruptedException interruptedException) {
+
+                        Thread.currentThread()
+                                .interrupt();
+
+                        return null;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private List<String> getAuthorNames(
+            OpenLibraryWorkDto work
+    ) {
+
+        List<String> authorNames =
+                new ArrayList<>();
+
+        JsonNode authorsNode =
+                work.getAuthors();
+
+        if (authorsNode == null
+                || !authorsNode.isArray()) {
+
             return authorNames;
         }
 
         for (JsonNode authorEntry : authorsNode) {
 
-            JsonNode authorNode = authorEntry.get("author");
+            try {
 
-            if (authorNode == null) {
-                continue;
-            }
+                JsonNode authorNode =
+                        authorEntry.get("author");
 
-            JsonNode keyNode = authorNode.get("key");
+                if (authorNode == null) {
+                    continue;
+                }
 
-            if (keyNode == null) {
-                continue;
-            }
+                JsonNode keyNode =
+                        authorNode.get("key");
 
-            String authorKey = keyNode.asText()
-                    .replace("/authors/", "");
+                if (keyNode == null) {
+                    continue;
+                }
 
-            JsonNode authorResponse = restClient
-                    .get()
-                    .uri("/authors/{authorId}.json", authorKey)
-                    .retrieve()
-                    .body(JsonNode.class);
+                String authorKey =
+                        keyNode
+                                .asText()
+                                .replace(
+                                        "/authors/",
+                                        ""
+                                );
 
-            if (authorResponse != null
-                    && authorResponse.get("name") != null) {
+                JsonNode authorResponse =
+                        restClient
+                                .get()
+                                .uri(
+                                        "/authors/{authorId}.json",
+                                        authorKey
+                                )
+                                .retrieve()
+                                .body(
+                                        JsonNode.class
+                                );
 
-                authorNames.add(
-                        authorResponse.get("name").asText()
+                if (authorResponse != null
+                        && authorResponse.get("name") != null) {
+
+                    authorNames.add(
+                            authorResponse
+                                    .get("name")
+                                    .asText()
+                    );
+                }
+
+            } catch (Exception e) {
+
+                /*
+                * Si Open Library falla al obtener
+                * un autor, no debemos impedir que
+                * el usuario vea el libro.
+                */
+                System.err.println(
+                        "No se pudo obtener un autor: "
+                                + e.getMessage()
                 );
             }
         }
 
         return authorNames;
+    }
+
+
+    private String cleanDescription(String description) {
+
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+
+        String cleaned = description;
+
+        // **texto** -> texto
+        cleaned = cleaned.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
+
+        // [texto](url) -> texto
+        cleaned = cleaned.replaceAll(
+                "\\[([^\\]]+)\\]\\([^\\)]+\\)",
+                "$1"
+        );
+
+        // Elimina líneas tipo (Source: ...)
+        cleaned = cleaned.replaceAll(
+                "(?i)\\(Source:.*?\\)",
+                ""
+        );
+
+        // Evita demasiados saltos seguidos
+        cleaned = cleaned.replaceAll(
+                "\\n{3,}",
+                "\n\n"
+        );
+
+        return cleaned.trim();
     }
 
 }
