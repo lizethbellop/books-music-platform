@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 /** Controlador REST para la verificación de token y restablecimiento de contraseñas. */
 @Tag(name = "Autenticación", description = "Endpoints para la gestión de autenticación, acceso y recuperación de cuentas")
 @RestController
+@RequestMapping("/api/v1/auth")
 @CrossOrigin(origins = "*") // <--- Permite peticiones desde cualquier origen (Flutter Web)@RequestMapping("/api/v1/auth")
 public class ResetPasswordController {
 
