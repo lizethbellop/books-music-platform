@@ -3,9 +3,11 @@ package com.musa.books.controller;
 import com.musa.books.dto.BookDetailDto;
 import com.musa.books.dto.BookSearchResultDto;
 import com.musa.books.service.OpenLibraryService;
+import com.musa.books.service.TranslationService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.musa.books.service.BookService;
 
 import java.util.List;
 
@@ -14,9 +16,14 @@ import java.util.List;
 public class BookController {
 
     private final OpenLibraryService openLibraryService;
+    private final BookService bookService;
 
-    public BookController(OpenLibraryService openLibraryService) {
+    public BookController(
+            OpenLibraryService openLibraryService,
+            BookService bookService
+    ) {
         this.openLibraryService = openLibraryService;
+        this.bookService = bookService;
     }
 
     @GetMapping("/search")
@@ -42,15 +49,23 @@ public class BookController {
 
         return ResponseEntity.ok(books);
     }
-
     @GetMapping("/{externalId}")
     public ResponseEntity<BookDetailDto> getBookDetail(
             @PathVariable String externalId
     ) {
 
-        BookDetailDto book =
-                openLibraryService.getBookDetail(externalId);
+        BookDetailDto detail =
+                openLibraryService.getBookDetail(
+                        externalId
+                );
 
-        return ResponseEntity.ok(book);
+        BookDetailDto preparedDetail =
+                bookService.prepareBookDetail(
+                        detail
+                );
+
+        return ResponseEntity.ok(
+                preparedDetail
+        );
     }
 }
