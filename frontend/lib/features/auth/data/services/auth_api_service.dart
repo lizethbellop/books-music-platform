@@ -113,11 +113,17 @@ class AuthApiService {
         body: jsonEncode(request.toJson()),
       );
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-
       if (response.statusCode == 200) {
+        // Prevenir choque si el body viene vacío desde el backend
+        if (response.body.trim().isEmpty) {
+          return MessageResponseModel(message: 'Token verificado correctamente');
+        }
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         return MessageResponseModel.fromJson(data);
       } else {
+        final data = response.body.isNotEmpty 
+            ? jsonDecode(utf8.decode(response.bodyBytes)) 
+            : {};
         final errorMessage = data['message'] ?? 'Token inválido o expirado';
         throw AuthApiException(errorMessage, statusCode: response.statusCode);
       }
@@ -170,6 +176,34 @@ class AuthApiService {
     } catch (e) {
       if (e is AuthApiException) rethrow;
       throw AuthApiException('Error al refrescar el token: ${e.toString()}');
+    }
+  }
+
+  /// Endpoint: POST /api/v1/auth/logout
+  Future<MessageResponseModel> logout(TokenRequestModel request) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/logout'),
+        headers: _headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.body.trim().isEmpty) {
+          return MessageResponseModel(message: 'Sesión cerrada exitosamente');
+        }
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        return MessageResponseModel.fromJson(data);
+      } else {
+        final data = response.body.isNotEmpty 
+            ? jsonDecode(utf8.decode(response.bodyBytes)) 
+            : {};
+        final errorMessage = data['message'] ?? 'Error al cerrar sesión';
+        throw AuthApiException(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      if (e is AuthApiException) rethrow;
+      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../features/auth/presentation/widgets/logout_button.dart';
 
 class MusaSidebar extends StatelessWidget {
   final AppSection selectedSection;
@@ -92,6 +93,8 @@ class MusaSidebar extends StatelessWidget {
               onSectionSelected(AppSection.profile);
             },
           ),
+
+          LogoutButton(), //CERRAR SESIÓN
         ],
       ),
     );
