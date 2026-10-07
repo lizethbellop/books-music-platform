@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -16,38 +17,31 @@ class MusaProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = imageUrl?.trim();
 
+    if (url == null || url.isEmpty) {
+      return _placeholder();
+    }
+
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => _placeholder(),
+        errorWidget: (context, url, error) => _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
     return CircleAvatar(
       radius: radius,
       backgroundColor: AppColors.mint,
-      child: url == null || url.isEmpty
-          ? Icon(
-              Icons.person_outline,
-              size: radius * 1.25,
-              color: AppColors.ink,
-            )
-          : ClipOval(
-              child: Image.network(
-                url,
-                width: radius * 2,
-                height: radius * 2,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Icon(
-                    Icons.person_outline,
-                    size: radius * 1.25,
-                    color: AppColors.ink,
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.person_outline,
-                    size: radius * 1.25,
-                    color: AppColors.ink,
-                  );
-                },
-              ),
-            ),
+      child: Icon(
+        Icons.person_outline,
+        size: radius * 1.25,
+        color: AppColors.ink,
+      ),
     );
   }
 }
