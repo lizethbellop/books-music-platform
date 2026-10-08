@@ -5,7 +5,6 @@ import com.musa.users.dto.response.AuthResponseDto;
 import com.musa.users.entity.User;
 import com.musa.users.exception.AccountDisabledException;
 import com.musa.users.exception.InvalidCredentialsException;
-import com.musa.users.exception.ResourceNotFoundException;
 import com.musa.users.repository.UserRepository;
 import com.musa.users.service.JwtService;
 import com.musa.users.service.LoginService;
@@ -19,7 +18,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import com.musa.users.session.RefreshSession;
+import com.musa.users.session.RefreshSessionStore;
+import java.time.Instant;
 
 /**
  * Implementación del servicio de inicio de sesión y autenticación con control de bloqueos por intentos fallidos en Redis.
@@ -33,6 +34,7 @@ public class LoginServiceImpl implements LoginService {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final StringRedisTemplate redisTemplate;
+    private final RefreshSessionStore refreshSessionStore;
 
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshTokenExpiration;
@@ -54,7 +56,8 @@ public class LoginServiceImpl implements LoginService {
         }
 
         User user = userRepository.findByEmailWithRole(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el email: " + email));
+                .orElseThrow(() ->
+                        new InvalidCredentialsException("Credenciales inválidas."));
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
             throw new AccountDisabledException("La cuenta se encuentra desactivada.");
@@ -69,14 +72,34 @@ public class LoginServiceImpl implements LoginService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
+        Instant sessionExpiresAt = Instant.ofEpochMilli(System.currentTimeMillis())
+                .plusMillis(refreshTokenExpiration);
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        String accessToken = jwtService.generateAccessToken(userDetails);
 
-        String refreshToken = UUID.randomUUID().toString();
-        String redisRefreshKey = "RT:" + refreshToken;
-        redisTemplate.opsForValue().set(redisRefreshKey, email, Duration.ofMillis(refreshTokenExpiration));
+        String accessToken = jwtService.generateAccessToken(
+                userDetails,
+                user.getId(),
+                sessionExpiresAt
+        );
 
-        return new AuthResponseDto(accessToken, refreshToken, user.getId(), user.getFullName(), user.getRole().getName()
+        String refreshToken = refreshSessionStore.create(
+                new RefreshSession(
+                        email,
+                        sessionExpiresAt,
+                        request.rememberMe()
+                )
+        );
+
+        return new AuthResponseDto(
+                accessToken,
+                refreshToken,
+                user.getId(),
+                user.getFullName(),
+                user.getRole().getName(),
+                jwtService.getAccessTokenExpiresAt(accessToken),
+                sessionExpiresAt,
+                user.getUsername()
         );
     }
 

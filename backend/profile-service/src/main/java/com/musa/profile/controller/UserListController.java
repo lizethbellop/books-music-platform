@@ -10,6 +10,8 @@ import com.musa.profile.dto.UpdateUserListRequest;
 import com.musa.profile.dto.AddListElementRequest;
 import com.musa.profile.dto.ListElementResponse;
 import com.musa.profile.dto.UserListDetailResponse;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,62 +29,78 @@ public class UserListController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserListResponse createList(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateUserListRequest request
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return userListService.createList(userId, request);
     }
 
     @GetMapping
     public List<UserListResponse> getOwnLists(
-            @RequestHeader("X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return userListService.getOwnLists(userId);
     }
 
     @PutMapping("/{listId}")
     public UserListResponse updateList(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID listId,
             @Valid @RequestBody UpdateUserListRequest request
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return userListService.updateList(userId, listId, request);
     }
 
     @PostMapping("/{listId}/elements")
     @ResponseStatus(HttpStatus.CREATED)
     public ListElementResponse addElement(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID listId,
             @Valid @RequestBody AddListElementRequest request
     ){
-        return userListService.addElement(userId, listId, request);
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userListService.addElement(
+                userId,
+                listId,
+                request,
+                jwt.getTokenValue()
+        );
     }
 
     @GetMapping("/{listId}")
     public UserListDetailResponse getListDetail(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID listId
     ) {
-        return userListService.getListDetail(userId, listId);
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userListService.getListDetail(
+                userId,
+                listId,
+                jwt.getTokenValue()
+        );
     }
 
     @DeleteMapping("/{listId}/elements/{elementId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeElement(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID listId,
             @PathVariable UUID elementId
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         userListService.removeElement(userId, listId, elementId);
     }
 
     @DeleteMapping("/{listId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteList(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID listId
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         userListService.deleteList(userId, listId);
     }
 }

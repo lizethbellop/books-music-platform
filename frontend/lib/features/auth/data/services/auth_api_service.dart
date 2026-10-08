@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import '../models/auth_response_model.dart';
@@ -7,7 +8,6 @@ import '../models/login_request_model.dart';
 import '../models/message_response_model.dart';
 import '../models/register_request_model.dart';
 import '../models/reset_password_request_model.dart';
-import '../models/verify_token_request_model.dart';
 import '../models/token_request_model.dart';
 
 class AuthApiException implements Exception {
@@ -26,14 +26,17 @@ class AuthApiService {
   final http.Client _client;
 
   AuthApiService({
-    this.baseUrl = 'http://localhost:8080/api/v1/auth',
+    this.baseUrl = const String.fromEnvironment(
+      'AUTH_API_URL',
+      defaultValue: 'http://localhost:8083/api/v1/auth',
+    ),
     http.Client? client,
   }) : _client = client ?? http.Client();
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   /// Endpoint: POST /api/v1/auth/login
   Future<AuthResponseModel> login(LoginRequestModel request) async {
@@ -54,7 +57,9 @@ class AuthApiService {
       }
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
+      throw AuthApiException(
+        'No se pudo conectar con el servidor: ${e.toString()}',
+      );
     }
   }
 
@@ -77,12 +82,16 @@ class AuthApiService {
       }
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
+      throw AuthApiException(
+        'No se pudo conectar con el servidor: ${e.toString()}',
+      );
     }
   }
 
   /// Endpoint: POST /api/v1/auth/forgot-password
-  Future<MessageResponseModel> forgotPassword(ForgotPasswordRequestModel request) async {
+  Future<MessageResponseModel> forgotPassword(
+    ForgotPasswordRequestModel request,
+  ) async {
     try {
       final response = await _client.post(
         Uri.parse('$baseUrl/forgot-password'),
@@ -95,46 +104,23 @@ class AuthApiService {
       if (response.statusCode == 200) {
         return MessageResponseModel.fromJson(data);
       } else {
-        final errorMessage = data['message'] ?? 'Error al solicitar la recuperación de contraseña';
+        final errorMessage =
+            data['message'] ??
+            'Error al solicitar la recuperación de contraseña';
         throw AuthApiException(errorMessage, statusCode: response.statusCode);
       }
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
-    }
-  }
-
-  /// Endpoint: POST /api/v1/auth/verify-token
-  Future<MessageResponseModel> verifyToken(VerifyTokenRequestModel request) async {
-    try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/verify-token'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
+      throw AuthApiException(
+        'No se pudo conectar con el servidor: ${e.toString()}',
       );
-
-      if (response.statusCode == 200) {
-        // Prevenir choque si el body viene vacío desde el backend
-        if (response.body.trim().isEmpty) {
-          return MessageResponseModel(message: 'Token verificado correctamente');
-        }
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        return MessageResponseModel.fromJson(data);
-      } else {
-        final data = response.body.isNotEmpty 
-            ? jsonDecode(utf8.decode(response.bodyBytes)) 
-            : {};
-        final errorMessage = data['message'] ?? 'Token inválido o expirado';
-        throw AuthApiException(errorMessage, statusCode: response.statusCode);
-      }
-    } catch (e) {
-      if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
     }
   }
 
   /// Endpoint: POST /api/v1/auth/reset-password
-  Future<MessageResponseModel> resetPassword(ResetPasswordRequestModel request) async {
+  Future<MessageResponseModel> resetPassword(
+    ResetPasswordRequestModel request,
+  ) async {
     try {
       final response = await _client.post(
         Uri.parse('$baseUrl/reset-password'),
@@ -147,12 +133,15 @@ class AuthApiService {
       if (response.statusCode == 200) {
         return MessageResponseModel.fromJson(data);
       } else {
-        final errorMessage = data['message'] ?? 'Error al restablecer la contraseña';
+        final errorMessage =
+            data['message'] ?? 'Error al restablecer la contraseña';
         throw AuthApiException(errorMessage, statusCode: response.statusCode);
       }
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
+      throw AuthApiException(
+        'No se pudo conectar con el servidor: ${e.toString()}',
+      );
     }
   }
 
@@ -175,12 +164,13 @@ class AuthApiService {
       }
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('Error al refrescar el token: ${e.toString()}');
+      throw AuthApiException(
+        'No se pudo renovar la sesión. Comprueba tu conexión.',
+      );
     }
   }
 
-  /// Endpoint: POST /api/v1/auth/logout
-  Future<MessageResponseModel> logout(TokenRequestModel request) async {
+  Future<void> logout(TokenRequestModel request) async {
     try {
       final response = await _client.post(
         Uri.parse('$baseUrl/logout'),
@@ -188,22 +178,21 @@ class AuthApiService {
         body: jsonEncode(request.toJson()),
       );
 
-      if (response.statusCode == 200) {
-        if (response.body.trim().isEmpty) {
-          return MessageResponseModel(message: 'Sesión cerrada exitosamente');
-        }
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        return MessageResponseModel.fromJson(data);
-      } else {
-        final data = response.body.isNotEmpty 
-            ? jsonDecode(utf8.decode(response.bodyBytes)) 
-            : {};
-        final errorMessage = data['message'] ?? 'Error al cerrar sesión';
-        throw AuthApiException(errorMessage, statusCode: response.statusCode);
-      }
+    if (response.statusCode == 200) {
+      return;
+    }
+
+    final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+    throw AuthApiException(
+      data['message'] as String? ?? 'No se pudo cerrar la sesión',
+      statusCode: response.statusCode,
+    );
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException('No se pudo conectar con el servidor: ${e.toString()}');
+      throw AuthApiException(
+        'No se pudo conectar para cerrar la sesión.',
+      );
     }
   }
 }

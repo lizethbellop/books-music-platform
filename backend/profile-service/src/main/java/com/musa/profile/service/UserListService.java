@@ -16,6 +16,12 @@ import com.musa.profile.exception.ListElementAlreadyExistsException;
 import com.musa.profile.repository.ListElementRepository;
 import com.musa.profile.dto.UserListDetailResponse;
 import com.musa.profile.exception.ListElementNotFoundException;
+import com.musa.profile.dto.ResolvedListElementResponse;
+import org.springframework.transaction.annotation.Propagation;
+import com.musa.profile.dto.catalog.CatalogResolution;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,15 +33,18 @@ public class UserListService {
     private final ProfileService profileService;
     private final UserListRepository userListRepository;
     private final ListElementRepository listElementRepository;
+    private final CatalogLookupService catalogLookupService;
 
     public UserListService(
             ProfileService profileService,
             UserListRepository userListRepository,
-            ListElementRepository listElementRepository
+            ListElementRepository listElementRepository,
+            CatalogLookupService catalogLookupService
     ) {
         this.profileService = profileService;
         this.userListRepository = userListRepository;
         this.listElementRepository = listElementRepository;
+        this.catalogLookupService = catalogLookupService;
     }
 
     @Transactional
@@ -82,27 +91,99 @@ public class UserListService {
         return UserListResponse.from(list);
     }
 
-    @Transactional
-    public ListElementResponse addElement(UUID userId, UUID listId, AddListElementRequest request){
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ListElementResponse addElement(
+            UUID userId,
+            UUID listId,
+            AddListElementRequest request,
+            String accessToken
+    ) {
         UserList list = getOwnedList(userId, listId);
-        boolean alreadyExists = listElementRepository.existsByListIdAndElementTypeAndReferenceId(list.getId(), request.elementType(), request.referenceId());
 
-        if(alreadyExists){
+        String elementType = request.elementType();
+        String referenceId = request.referenceId().trim();
+
+        boolean alreadyExists =
+                listElementRepository.existsByListIdAndElementTypeAndReferenceId(
+                        list.getId(),
+                        elementType,
+                        referenceId
+                );
+
+        if (alreadyExists) {
             throw new ListElementAlreadyExistsException();
         }
 
-        ListElement element = listElementRepository.save(new ListElement(list.getId(), request.elementType(), request.referenceId()));
+        CatalogResolution resolution = catalogLookupService.resolve(
+                elementType,
+                referenceId,
+                accessToken
+        );
 
-        return ListElementResponse.from(element);
+        if (resolution.resolutionStatus()
+                == CatalogResolution.Status.NOT_FOUND) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "El contenido solicitado no existe."
+            );
+        }
+
+        if (resolution.resolutionStatus()
+                != CatalogResolution.Status.AVAILABLE) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo verificar el contenido. Intenta nuevamente."
+            );
+        }
+
+        try {
+            ListElement element = listElementRepository.saveAndFlush(
+                    new ListElement(
+                            list.getId(),
+                            elementType,
+                            referenceId
+                    )
+            );
+
+            return ListElementResponse.from(element);
+        } catch (DataIntegrityViolationException exception) {
+            boolean duplicate =
+                    listElementRepository.existsByListIdAndElementTypeAndReferenceId(
+                            list.getId(),
+                            elementType,
+                            referenceId
+                    );
+
+            if (duplicate) {
+                throw new ListElementAlreadyExistsException();
+            }
+
+            throw exception;
+        }
     }
 
-    public UserListDetailResponse getListDetail(UUID userId, UUID listId) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public UserListDetailResponse getListDetail(
+            UUID userId,
+            UUID listId,
+            String accessToken
+    ) {
         UserList list = getOwnedList(userId, listId);
 
-        return UserListDetailResponse.from(
-                list,
+        List<ResolvedListElementResponse> elements =
                 listElementRepository.findByListId(list.getId())
-        );
+                        .stream()
+                        .map(element -> ResolvedListElementResponse.from(
+                                element,
+                                catalogLookupService.resolve(
+                                        element.getElementType(),
+                                        element.getReferenceId(),
+                                        accessToken
+                                )
+                        ))
+                        .toList();
+
+        return UserListDetailResponse.from(list, elements);
     }
 
     @Transactional

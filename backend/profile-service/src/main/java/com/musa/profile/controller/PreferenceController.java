@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/profiles/me/preferences")
@@ -22,26 +24,29 @@ public class PreferenceController {
 
     @GetMapping
     public PreferencesResponse getOwnPreferences(
-            @RequestHeader("X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return preferenceService.getOwnPreferences(userId);
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return preferenceService.getOwnPreferences(userId, jwt.getTokenValue());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PreferenceElementResponse addElement(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody AddPreferenceElementRequest request
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return preferenceService.addElement(userId, request);
     }
 
     @DeleteMapping("/{elementId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeElement(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID elementId
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         preferenceService.removeElement(userId, elementId);
     }
 }

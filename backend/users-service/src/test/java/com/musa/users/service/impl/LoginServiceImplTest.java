@@ -6,7 +6,9 @@ import com.musa.users.entity.Role;
 import com.musa.users.entity.User;
 import com.musa.users.exception.AccountDisabledException;
 import com.musa.users.exception.InvalidCredentialsException;
-import com.musa.users.exception.ResourceNotFoundException;
+import com.musa.users.session.RefreshSession;
+import com.musa.users.session.RefreshSessionStore;
+import org.mockito.ArgumentCaptor;
 import com.musa.users.repository.UserRepository;
 import com.musa.users.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,6 +55,9 @@ class LoginServiceImplTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+    @Mock
+    private RefreshSessionStore refreshSessionStore;
+
     @InjectMocks
     private LoginServiceImpl loginService;
 
@@ -62,12 +68,16 @@ class LoginServiceImplTest {
     @BeforeEach
     void setUp() {
         // Asignación de propiedades @Value inyectadas dinámicamente
-        ReflectionTestUtils.setField(loginService, "refreshTokenExpiration", 2400000L);
+        ReflectionTestUtils.setField(loginService, "refreshTokenExpiration", 604800000L);
         ReflectionTestUtils.setField(loginService, "maxFailedAttempts", 3);
         ReflectionTestUtils.setField(loginService, "lockTimeMinutes", 5L);
 
 
-        loginRequest = new LoginRequestDto("ana@usi.com", "Password123!");
+        loginRequest = new LoginRequestDto(
+                "ana@usi.com",
+                "Password123!",
+                false
+        );
 
         userId = UUID.randomUUID();
         Role role = new Role();
@@ -78,6 +88,7 @@ class LoginServiceImplTest {
         user = new User();
         user.setId(userId);
         user.setFullName("Ana López");
+        user.setUsername("ana_lopez");
         user.setEmail("ana@usi.com");
         user.setPasswordHash("HASH_ENCRIPTADO");
         user.setIsActive(true);
@@ -99,14 +110,14 @@ class LoginServiceImplTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar ResourceNotFoundException si el usuario no existe en la base de datos")
+    @DisplayName("Debe lanzar InvalidCredentialsException si el usuario no existe en la base de datos")
     void login_debeLanzarExcepcion_siUsuarioNoExiste() {
         // Arrange
         when(redisTemplate.hasKey("lock:ana@usi.com")).thenReturn(false);
         when(userRepository.findByEmailWithRole("ana@usi.com")).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> loginService.login(loginRequest));
+        assertThrows(InvalidCredentialsException.class, () -> loginService.login(loginRequest));
 
         verify(userRepository).findByEmailWithRole("ana@usi.com");
         verifyNoInteractions(passwordEncoder, jwtService);
@@ -174,24 +185,59 @@ class LoginServiceImplTest {
         when(userRepository.findByEmailWithRole("ana@usi.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Password123!", "HASH_ENCRIPTADO")).thenReturn(true);
         when(userDetailsService.loadUserByUsername("ana@usi.com")).thenReturn(userDetailsMock);
-        when(jwtService.generateAccessToken(userDetailsMock)).thenReturn("TOKEN_ACCESS_SIMULADO");
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(jwtService.generateAccessToken(
+                eq(userDetailsMock), eq(userId), any(Instant.class)))
+                .thenReturn("TOKEN_ACCESS_SIMULADO");
+        Instant accessExpiresAt = Instant.now().plusSeconds(900);
+        when(jwtService.getAccessTokenExpiresAt("TOKEN_ACCESS_SIMULADO")).thenReturn(accessExpiresAt);
+        when(refreshSessionStore.create(any(RefreshSession.class))).thenReturn("REFRESH_SIMULADO");
 
         // Act
+        Instant before = Instant.ofEpochMilli(System.currentTimeMillis());
         AuthResponseDto response = loginService.login(loginRequest);
+        Instant after = Instant.ofEpochMilli(System.currentTimeMillis());
 
         // Assert
         assertAll(
                 () -> assertEquals("TOKEN_ACCESS_SIMULADO", response.accessToken()),
-                () -> assertNotNull(response.refreshToken()),
+                () -> assertEquals("REFRESH_SIMULADO", response.refreshToken()),
+                () -> assertEquals(accessExpiresAt, response.accessTokenExpiresAt()),
                 () -> assertEquals(userId, response.userId()),
                 () -> assertEquals("Ana López", response.fullName()),
-                () -> assertEquals("USER", response.roleName())
+                () -> assertEquals("USER", response.roleName()),
+                () -> assertEquals("ana_lopez", response.username())
         );
 
         // Verify: Se limpia el historial de intentos, se actualiza última fecha de login y se guarda el Refresh Token en Redis
         verify(redisTemplate).delete("attempts:ana@usi.com");
         verify(userRepository).save(user);
-        verify(valueOperations).set(startsWith("RT:"), eq("ana@usi.com"), any(Duration.class));
+        ArgumentCaptor<RefreshSession> sessionCaptor = ArgumentCaptor.forClass(RefreshSession.class);
+        verify(refreshSessionStore).create(sessionCaptor.capture());
+        RefreshSession session = sessionCaptor.getValue();
+        assertEquals(response.sessionExpiresAt(), session.sessionExpiresAt());
+        assertFalse(session.rememberMe());
+        assertFalse(session.sessionExpiresAt().isBefore(before.plusSeconds(604800)));
+        assertFalse(session.sessionExpiresAt().isAfter(after.plusSeconds(604800)));
+    }
+    @Test
+    @DisplayName("Debe guardar la opción Recordarme elegida por el usuario")
+    void login_debeGuardarRecordarme_siUsuarioLoSelecciona() {
+        // Arrange
+        UserDetails userDetailsMock = mock(UserDetails.class);
+        when(userRepository.findByEmailWithRole("ana@usi.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Password123!", "HASH_ENCRIPTADO")).thenReturn(true);
+        when(userDetailsService.loadUserByUsername("ana@usi.com")).thenReturn(userDetailsMock);
+        when(jwtService.generateAccessToken(
+                eq(userDetailsMock), eq(userId), any(Instant.class)))
+                .thenReturn("TOKEN_ACCESS_SIMULADO");
+        when(jwtService.getAccessTokenExpiresAt("TOKEN_ACCESS_SIMULADO"))
+                .thenReturn(Instant.now().plusSeconds(900));
+        when(refreshSessionStore.create(any(RefreshSession.class))).thenReturn("REFRESH_SIMULADO");
+
+        // Act
+        loginService.login(new LoginRequestDto("ana@usi.com", "Password123!", true));
+
+        // Assert: guardar la decisión sin depender de Redis real
+        verify(refreshSessionStore).create(argThat(session -> session.rememberMe()));
     }
 }

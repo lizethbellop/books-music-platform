@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -46,7 +47,10 @@ class LoginControllerTest {
                 "refresh-token-demo",
                 UUID.randomUUID(),
                 "Ana López",
-                "USER"
+                "USER",
+                Instant.parse("2026-10-08T02:15:00Z"),
+                Instant.parse("2026-10-15T02:00:00Z"),
+                "ana_lopez"
         );
         when(loginService.login(any())).thenReturn(mockResponse);
 
@@ -63,6 +67,8 @@ class LoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessTokenExpiresAt").value("2026-10-08T02:15:00Z"))
+                .andExpect(jsonPath("$.sessionExpiresAt").value("2026-10-15T02:00:00Z"))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.accessToken").value("access-token-demo"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token-demo"))

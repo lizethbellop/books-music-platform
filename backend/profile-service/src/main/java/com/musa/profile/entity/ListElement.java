@@ -7,7 +7,17 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Entity
-@Table(name = "list_elements")
+@Table(
+        name = "list_elements",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_list_element",
+                columnNames = {
+                        "list_id",
+                        "element_type",
+                        "reference_id"
+                }
+        )
+)
 public class ListElement {
 
     @Id

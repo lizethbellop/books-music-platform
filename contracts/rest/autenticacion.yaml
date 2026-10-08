@@ -1,0 +1,436 @@
+openapi: 3.0.3
+info:
+  title: API de autenticación de Musa
+  version: 0.1.0
+  description: Contrato objetivo acordado para autenticación y sesión. Incluye mejoras que deben
+    implementarse y verificarse antes de considerar conforme el backend.
+  x-implementation-status: pendiente de implementar cambios de sesión y recuperación
+servers:
+- url: http://localhost:8083
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Iniciar sesión
+      operationId: login
+      description: Comprueba las credenciales sin revelar si el correo existe. El acceso dura 15
+        minutos. La sesión tiene un máximo absoluto de 7 días desde el login, que no se extiende
+        al renovar. rememberMe controla si el cliente conserva la sesión al cerrar la aplicación.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  minLength: 1
+                  example: estudiante@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 1
+                  writeOnly: true
+                rememberMe:
+                  type: boolean
+                  default: false
+                  description: Si es true, conserva la sesión entre aperturas de la aplicación. Si
+                    es false, conserva los tokens solo durante la ejecución, sin persistirlos. En
+                    ambos casos, el límite absoluto es de 7 días desde el login y el acceso se renueva
+                    automáticamente mientras la sesión sea válida.
+      responses:
+        '200':
+          description: Inicio de sesión correcto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Los campos enviados no cumplen las validaciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+              example:
+                email: Formato de correo inválido
+        '401':
+          description: Correo o contraseña incorrectos, o bloqueo temporal por intentos fallidos.
+            No distingue si el correo está registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Credenciales inválidas.
+        '403':
+          description: La cuenta está desactivada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/v1/auth/refresh-token:
+    post:
+      summary: Renovar la sesión
+      operationId: refreshToken
+      description: 'Valida el refresh token y que la cuenta siga activa. Rota el refresh token de
+        forma atómica: entrega uno nuevo e invalida el anterior. El acceso vence en 15 minutos o
+        al alcanzar el límite absoluto de la sesión, lo que ocurra primero. No extiende sessionExpiresAt.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Sesión renovada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Falta el refresh token o está vacío.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+              example:
+                refreshToken: El refresh token es obligatorio
+        '401':
+          description: El refresh token es inválido, venció o fue revocado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          description: La cuenta está desactivada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/v1/auth/logout:
+    post:
+      summary: Cerrar sesión
+      operationId: logout
+      description: 'Invalida el refresh token de esta sesión. El cliente debe eliminar los tokens
+        guardados localmente. Si el refresh token ya no existe, también devuelve éxito. No cierra
+        las sesiones de otros dispositivos. El token de acceso emitido puede seguir siendo válido
+        hasta su vencimiento.
+
+        '
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: El refresh token ya no permite renovar la sesión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Sesión cerrada exitosamente.
+        '400':
+          description: Falta el refresh token o está vacío.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+              example:
+                refreshToken: El token de refresco es obligatorio
+  /api/v1/auth/register:
+    post:
+      summary: Registrar una cuenta
+      operationId: register
+      description: 'Crea una cuenta con un rol existente y envía un correo de bienvenida. Las contraseñas
+        deben coincidir. No inicia sesión automáticamente ni entrega tokens.
+
+        '
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Cuenta creada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Registro exitoso.
+        '400':
+          description: Datos inválidos o contraseñas que no coinciden.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/MessageResponse'
+                - $ref: '#/components/schemas/ValidationErrors'
+              examples:
+                validation:
+                  value:
+                    email: Formato de correo inválido
+                passwordMismatch:
+                  value:
+                    message: Las contraseñas no coinciden.
+        '404':
+          description: El rol solicitado no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '409':
+          description: El correo ya está registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Falló el envío del correo de bienvenida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Solicitar recuperación de contraseña
+      operationId: forgotPassword
+      description: Si la cuenta existe, envía por correo un enlace de recuperación. La respuesta
+        normal usa el mismo código y mensaje para cuentas existentes e inexistentes. No entrega el
+        token en la API. El token de recuperación vence en 5 minutos y es de un solo uso.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  minLength: 1
+                  example: estudiante@example.com
+      responses:
+        '200':
+          description: Solicitud procesada sin indicar si el correo está registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Si existe una cuenta con ese correo, recibirás instrucciones para restablecer
+                  tu contraseña.
+        '400':
+          description: El correo está vacío o tiene un formato inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+              example:
+                email: Formato de correo inválido
+        '500':
+          description: Falló el envío del correo de recuperación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/v1/auth/reset-password:
+    post:
+      summary: Restablecer la contraseña
+      operationId: resetPassword
+      description: Valida el token de recuperación y las dos contraseñas. Rechaza contraseñas distintas
+        entre sí o iguales a la actual. Actualiza la contraseña y consume el token de forma atómica
+        para impedir su reutilización. No inicia sesión automáticamente.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Contraseña actualizada y token consumido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Contraseña restablecida exitosamente.
+        '400':
+          description: Datos inválidos, contraseñas que no coinciden o contraseña igual a la actual.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/MessageResponse'
+                - $ref: '#/components/schemas/ValidationErrors'
+        '401':
+          description: Token de recuperación inválido, vencido o ya utilizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+components:
+  schemas:
+    MessageResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Mensaje que explica el resultado de la operación.
+    AuthResponse:
+      type: object
+      required:
+      - accessToken
+      - refreshToken
+      - userId
+      - fullName
+      - username
+      - roleName
+      - accessTokenExpiresAt
+      - sessionExpiresAt
+      properties:
+        accessToken:
+          type: string
+          description: Token de acceso para las peticiones autenticadas.
+        refreshToken:
+          type: string
+          description: Token utilizado para renovar la sesión.
+        userId:
+          type: string
+          format: uuid
+          description: Identificador del usuario en autenticación.
+        username:
+          type: string
+          minLength: 3
+          maxLength: 40
+          pattern: '^[A-Za-z0-9_]{3,40}$'
+          description: Nombre único; se almacena en minúsculas.
+          example: liz_bello
+        fullName:
+          type: string
+        roleName:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+          description: 'Vencimiento UTC del token: el menor entre 15 minutos desde su emisión y sessionExpiresAt.'
+        sessionExpiresAt:
+          type: string
+          format: date-time
+          description: Límite absoluto UTC de 7 días desde el login; permanece igual durante todas
+            las renovaciones.
+    RegisterRequest:
+      type: object
+      required:
+      - fullName
+      - username
+      - email
+      - password
+      - confirmPassword
+      - roleName
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 40
+          pattern: '^[A-Za-z0-9_]{3,40}$'
+          description: Nombre único; se almacena en minúsculas.
+          example: liz_bello
+        fullName:
+          type: string
+          minLength: 1
+          description: Nombre completo; no puede contener solo espacios.
+          example: Estudiante Musa
+        email:
+          type: string
+          format: email
+          minLength: 1
+          example: estudiante@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          pattern: ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$
+          writeOnly: true
+          description: 'Debe incluir un número, una minúscula, una mayúscula y al menos uno de estos
+            caracteres especiales: @#$%^&+=!
+
+            '
+        confirmPassword:
+          type: string
+          format: password
+          minLength: 1
+          writeOnly: true
+          description: Debe coincidir exactamente con password.
+        roleName:
+          type: string
+          minLength: 1
+          description: Nombre de un rol existente para el tipo de cuenta.
+          example: USUARIO
+    ValidationErrors:
+      type: object
+      additionalProperties:
+        type: string
+      not:
+        required:
+        - message
+      description: Mensajes de validación por nombre de campo.
+    ResetPasswordRequest:
+      type: object
+      required:
+      - token
+      - newPassword
+      - confirmNewPassword
+      properties:
+        token:
+          type: string
+          minLength: 1
+          writeOnly: true
+          description: Token del enlace de recuperación, distinto de los tokens de sesión.
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          pattern: ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$
+          writeOnly: true
+          description: 'Debe incluir un número, una minúscula, una mayúscula y al menos uno de estos
+            caracteres especiales: @#$%^&+=!
+
+            '
+        confirmNewPassword:
+          type: string
+          format: password
+          minLength: 1
+          writeOnly: true
+          description: Debe coincidir exactamente con newPassword; el backend comprueba la igualdad.
+    TokenRequest:
+      type: object
+      required:
+      - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          writeOnly: true
+          description: Token de renovación de esta sesión.

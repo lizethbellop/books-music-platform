@@ -11,15 +11,18 @@ import '../../data/models/profile_model.dart';
 import '../../data/services/profile_api_service.dart';
 import '../widgets/profile_collections.dart';
 import 'edit_profile_page.dart';
+import '../../../auth/data/services/auth_session_manager.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
   final bool embedded;
+  final VoidCallback? onProfileUpdated;
 
   const ProfilePage({
     super.key,
     required this.userId,
     this.embedded = false,
+    this.onProfileUpdated,
   });
 
   @override
@@ -31,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   late Future<ProfileModel> _profileFuture;
   Key _navigationShellKey = UniqueKey();
+  bool _loggingOut = false;
 
   @override
   void initState() {
@@ -39,9 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadProfile() {
-    _profileFuture = _profileApiService.getOwnProfile(
-      userId: widget.userId,
-    );
+    _profileFuture = _profileApiService.getOwnProfile(userId: widget.userId);
   }
 
   void _retry() {
@@ -55,16 +57,31 @@ class _ProfilePageState extends State<ProfilePage> {
     final wasUpdated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) {
-          return EditProfilePage(
-            userId: widget.userId,
-            profile: profile,
-          );
+          return EditProfilePage(userId: widget.userId, profile: profile);
         },
       ),
     );
 
     if (wasUpdated == true && mounted) {
       _retry();
+      widget.onProfileUpdated?.call();
+    }
+  }
+
+  Future<void> _logout() async {
+    if (_loggingOut) return;
+    setState(() => _loggingOut = true);
+    try {
+      await AuthSessionManager.instance.logout();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo completar el cierre de sesión.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loggingOut = false);
     }
   }
 
@@ -81,13 +98,14 @@ class _ProfilePageState extends State<ProfilePage> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.music);
         return;
 
-      case MusaDestination.explore:
       case MusaDestination.books:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.books);
+        return;
+
+      case MusaDestination.explore:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Esta sección se conectará próximamente.',
-            ),
+            content: Text('Esta sección se conectará próximamente.'),
           ),
         );
         return;
@@ -102,17 +120,12 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.lavender,
-              ),
+              child: CircularProgressIndicator(color: AppColors.lavender),
             );
           }
 
           if (snapshot.hasError) {
-            return _ProfileErrorView(
-              error: snapshot.error!,
-              onRetry: _retry,
-            );
+            return _ProfileErrorView(error: snapshot.error!, onRetry: _retry);
           }
 
           final profile = snapshot.data!;
@@ -121,16 +134,15 @@ class _ProfilePageState extends State<ProfilePage> {
             profile: profile,
             userId: widget.userId,
             onEdit: () => _openEditProfile(profile),
+            onLogout: _logout,
+            loggingOut: _loggingOut,
           );
         },
       ),
     );
 
     if (widget.embedded) {
-      return ColoredBox(
-        color: AppColors.cream,
-        child: profileContent,
-      );
+      return ColoredBox(color: AppColors.cream, child: profileContent);
     }
 
     return MusaNavigationShell(
@@ -147,11 +159,15 @@ class _ProfileContent extends StatelessWidget {
   final ProfileModel profile;
   final String userId;
   final VoidCallback onEdit;
+  final VoidCallback onLogout;
+  final bool loggingOut;
 
   const _ProfileContent({
     required this.profile,
     required this.userId,
     required this.onEdit,
+    required this.onLogout,
+    required this.loggingOut,
   });
 
   @override
@@ -180,7 +196,18 @@ class _ProfileContent extends StatelessWidget {
                     isDesktop: isDesktop,
                     onEdit: onEdit,
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: loggingOut ? null : onLogout,
+                      icon: const Icon(Icons.logout),
+                      label: Text(
+                        loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   ProfileCollections(userId: userId),
                 ],
               ),
@@ -209,7 +236,9 @@ class _ProfileHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Mi perfil',
+          AuthSessionManager.instance.session?.username.isNotEmpty == true
+              ? AuthSessionManager.instance.session!.username
+              : 'Mi perfil',
           style: AppTextStyles.pageTitle.copyWith(
             fontSize: isDesktop ? 44 : 32,
           ),
@@ -233,10 +262,7 @@ class _ProfileHeader extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.ink,
         side: const BorderSide(color: AppColors.ink),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 16,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       ),
     );
 
@@ -244,10 +270,7 @@ class _ProfileHeader extends StatelessWidget {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ProfileAvatar(
-            imageUrl: profile.profilePictureUrl,
-            radius: 72,
-          ),
+          _ProfileAvatar(imageUrl: profile.profilePictureUrl, radius: 72),
           const SizedBox(width: 32),
           Expanded(child: information),
           const SizedBox(width: 24),
@@ -262,10 +285,7 @@ class _ProfileHeader extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProfileAvatar(
-              imageUrl: profile.profilePictureUrl,
-              radius: 52,
-            ),
+            _ProfileAvatar(imageUrl: profile.profilePictureUrl, radius: 52),
             const SizedBox(width: 20),
             Expanded(child: information),
           ],
@@ -281,26 +301,18 @@ class _ProfileAvatar extends StatelessWidget {
   final String? imageUrl;
   final double radius;
 
-  const _ProfileAvatar({
-    required this.imageUrl,
-    required this.radius,
-  });
+  const _ProfileAvatar({required this.imageUrl, required this.radius});
 
   @override
   Widget build(BuildContext context) {
-    return MusaProfileAvatar(
-      imageUrl: imageUrl,
-      radius: radius,
-    );
+    return MusaProfileAvatar(imageUrl: imageUrl, radius: radius);
   }
 }
 
 class _PrivacyChip extends StatelessWidget {
   final bool isPrivate;
 
-  const _PrivacyChip({
-    required this.isPrivate,
-  });
+  const _PrivacyChip({required this.isPrivate});
 
   @override
   Widget build(BuildContext context) {
@@ -310,9 +322,7 @@ class _PrivacyChip extends StatelessWidget {
         size: 18,
         color: AppColors.ink,
       ),
-      label: Text(
-        isPrivate ? 'Perfil privado' : 'Perfil público',
-      ),
+      label: Text(isPrivate ? 'Perfil privado' : 'Perfil público'),
       backgroundColor: AppColors.mint,
       side: BorderSide.none,
     );
@@ -322,9 +332,7 @@ class _PrivacyChip extends StatelessWidget {
 class _MusaWordmark extends StatelessWidget {
   final double width;
 
-  const _MusaWordmark({
-    required this.width,
-  });
+  const _MusaWordmark({required this.width});
 
   @override
   Widget build(BuildContext context) {
@@ -346,10 +354,7 @@ class _ProfileErrorView extends StatelessWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  const _ProfileErrorView({
-    required this.error,
-    required this.onRetry,
-  });
+  const _ProfileErrorView({required this.error, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -363,11 +368,7 @@ class _ProfileErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: AppColors.ink,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.ink),
             const SizedBox(height: 16),
             Text(
               message,

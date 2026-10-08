@@ -21,15 +21,18 @@ import java.util.UUID;
 public class PreferenceService {
 
     private final ProfileService profileService;
+    private final CatalogLookupService catalogLookupService;
     private final PreferenceRepository preferenceRepository;
     private final PreferenceElementRepository preferenceElementRepository;
 
     public PreferenceService(
             ProfileService profileService,
             PreferenceRepository preferenceRepository,
-            PreferenceElementRepository preferenceElementRepository
+            PreferenceElementRepository preferenceElementRepository,
+            CatalogLookupService catalogLookupService
     ) {
         this.profileService = profileService;
+        this.catalogLookupService = catalogLookupService;
         this.preferenceRepository = preferenceRepository;
         this.preferenceElementRepository = preferenceElementRepository;
     }
@@ -42,6 +45,17 @@ public class PreferenceService {
                         preferenceElementRepository.findByPreferenceId(preference.getId())
                 ))
                 .orElseGet(() -> new PreferencesResponse(List.of()));
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public PreferencesResponse getOwnPreferences(UUID userId, String accessToken) {
+        PreferencesResponse stored = getOwnPreferences(userId);
+        return new PreferencesResponse(stored.elements().stream().map(element -> {
+            var resolution = catalogLookupService.resolve(
+                    element.elementType(), element.referenceId(), accessToken);
+            return new PreferenceElementResponse(element.id(), element.elementType(),
+                    element.referenceId(), resolution.resolutionStatus(), resolution.content());
+        }).toList());
     }
 
     @Transactional

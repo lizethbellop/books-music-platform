@@ -1,5 +1,10 @@
 package com.musa.music.controller;
 
+import java.util.UUID;
+import com.musa.music.config.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+
 import com.musa.music.dto.MusicReviewRequest;
 import com.musa.music.dto.MusicReviewUpdateRequest;
 import com.musa.music.dto.ReviewedMusicResponse;
@@ -25,27 +30,33 @@ public class MusicReviewController {
 
     @PostMapping
     public MusicReview createReview(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody MusicReviewRequest request
     ) {
+        AuthenticatedUser.requireOwn(jwt, request.userId());
+
         return musicReviewService.createReview(request);
     }
 
     @PutMapping("/{reviewId}")
     public MusicReview updateReview(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long reviewId,
             @RequestBody MusicReviewUpdateRequest request
     ) {
         return musicReviewService.updateReview(
                 reviewId,
+                UUID.fromString(jwt.getSubject()),
                 request
         );
     }
 
     @DeleteMapping("/{reviewId}")
     public void deleteReview(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long reviewId
     ) {
-        musicReviewService.deleteReview(reviewId);
+        musicReviewService.deleteReview(reviewId, UUID.fromString(jwt.getSubject()));
     }
 
     @GetMapping("/content/{musicContentId}")
@@ -58,9 +69,12 @@ public class MusicReviewController {
 
     @GetMapping("/user/{userId}/content/{musicContentId}")
     public MusicReview getUserReview(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") UUID suppliedUserId,
             @PathVariable Long musicContentId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         return musicReviewService.getUserReview(
                 userId,
                 musicContentId
@@ -69,10 +83,13 @@ public class MusicReviewController {
 
     @GetMapping("/user/{userId}")
     public MusicReview getUserReviewBySpotify(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") UUID suppliedUserId,
             @RequestParam String spotifyId,
             @RequestParam MusicContentType contentType
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         return musicReviewService.getUserReviewBySpotify(
                 userId,
                 spotifyId,
@@ -93,8 +110,11 @@ public class MusicReviewController {
 
     @GetMapping("/user/{userId}/reviewed")
     public List<ReviewedMusicResponse> getReviewedMusic(
-            @PathVariable Long userId
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         return musicReviewService.getReviewedMusicByUser(userId);
     }
 }

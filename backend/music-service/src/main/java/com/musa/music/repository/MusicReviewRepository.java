@@ -1,5 +1,7 @@
 package com.musa.music.repository;
 
+import java.util.UUID;
+
 import com.musa.music.entity.MusicReview;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,7 +11,7 @@ import java.util.Optional;
 public interface MusicReviewRepository extends JpaRepository<MusicReview, Long> {
 
     Optional<MusicReview> findByUserIdAndMusicContentId(
-            Long userId,
+            UUID userId,
             Long musicContentId
     );
 
@@ -18,6 +20,6 @@ public interface MusicReviewRepository extends JpaRepository<MusicReview, Long> 
     );
 
     List<MusicReview> findByUserIdOrderByCreatedAtDesc(
-            Long userId
+            UUID userId
     );
 }

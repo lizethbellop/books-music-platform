@@ -1,5 +1,7 @@
 package com.musa.music.service;
 
+import java.util.UUID;
+
 import com.musa.music.dto.MusicRatingRequest;
 import com.musa.music.entity.MusicContent;
 import com.musa.music.entity.MusicContentType;
@@ -51,7 +53,7 @@ public class MusicRatingService {
     }
 
     public Double getUserRating(
-            Long userId,
+            UUID userId,
             String spotifyId,
             MusicContentType contentType
     ) {

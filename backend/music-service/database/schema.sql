@@ -16,7 +16,7 @@ CREATE TABLE music_content (
 
 CREATE TABLE music_rating (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    user_id UUID NOT NULL,
     music_content_id BIGINT NOT NULL,
     rating DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +33,7 @@ CREATE TABLE music_rating (
 
 CREATE TABLE music_favorite (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    user_id UUID NOT NULL,
     music_content_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -48,7 +48,7 @@ CREATE TABLE music_favorite (
 
 CREATE TABLE music_review (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    user_id UUID NOT NULL,
     music_content_id BIGINT NOT NULL,
     review_text TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

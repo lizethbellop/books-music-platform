@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: API de música de Musa
+  version: 0.1.0
+  description: Contrato objetivo basado en el código local. Autenticación Bearer implementada. Errores uniformes
+    de negocio y extensiones indicadas requieren implementación. No afirma conformidad actual del backend.
+  x-implementation-status: objetivo; autenticación implementada; errores de negocio y extensiones pendientes
+servers:
+  - url: http://localhost:8080
+security:
+  - BearerAuth: []
+paths:
+  /api/music/search:
+    get:
+      summary: Buscar música
+      operationId: searchMusic
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: ''
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MusicSearchItem'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/music/{type}/{spotifyId}:
+    get:
+      summary: Consultar detalle musical
+      operationId: getMusicDetail
+      description: Consumido por Flutter y perfil. Usa la pareja type y spotifyId; el ID interno
+        numérico no es una referencia entre servicios. Las claves de Spotify permanecen en música.
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: ''
+          schema: &id001
+            type: string
+            enum:
+              - SONG
+              - ALBUM
+              - ARTIST
+        - name: spotifyId
+          in: path
+          required: true
+          description: ''
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicDetail'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/music/ratings:
+    post:
+      summary: Guardar o actualizar calificación
+      operationId: saveMusicRating
+      description: userId del cuerpo debe coincidir con sub del token validado; se mantiene por compatibilidad
+        y no acredita identidad.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicRatingInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicRating'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/music/ratings/user/{userId}:
+    get:
+      summary: Consultar calificación propia
+      operationId: getOwnMusicRating
+      parameters:
+        - &id004
+          name: userId
+          in: path
+          required: true
+          description: Debe coincidir con el usuario del token validado; estas rutas consultan acciones
+            propias.
+          schema:
+            type: string
+            format: uuid
+        - &id002
+          name: spotifyId
+          in: query
+          required: true
+          description: ''
+          schema:
+            type: string
+            minLength: 1
+        - &id003
+          name: contentType
+          in: query
+          required: true
+          description: ''
+          schema: *id001
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: number
+                nullable: true
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /api/music/favorites:
+    post:
+      summary: Agregar favorito musical
+      operationId: addMusicFavorite
+      description: Comprobar que userId coincide con sub del token validado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicActionInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicFavorite'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+    delete:
+      summary: Quitar favorito musical
+      operationId: removeMusicFavorite
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Debe coincidir con sub del token validado.
+          schema:
+            type: string
+            format: uuid
+        - *id002
+        - *id003
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/music/favorites/user/{userId}:
+    get:
+      summary: Consultar si es favorito propio
+      operationId: isMusicFavorite
+      parameters:
+        - *id004
+        - *id002
+        - *id003
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /api/music/reviews:
+    post:
+      summary: Crear reseña musical
+      operationId: createMusicReview
+      description: Comprobar que userId coincide con sub del token validado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicReviewInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/music/reviews/{reviewId}:
+    put:
+      summary: Editar reseña propia
+      operationId: updateMusicReview
+      description: Validar propiedad de la reseña usando el UUID del token. Actualmente esta comprobación
+        debe incorporarse.
+      parameters:
+        - &id005
+          name: reviewId
+          in: path
+          required: true
+          description: ''
+          schema: &id006
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicReviewUpdate'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    delete:
+      summary: Eliminar reseña propia
+      operationId: deleteMusicReview
+      description: Respuesta sin cuerpo, como el controlador actual. Validar propiedad con el UUID
+        del token.
+      parameters:
+        - *id005
+      responses:
+        '200':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/music/reviews/content/{musicContentId}:
+    get:
+      summary: Consultar reseñas por ID interno de música
+      operationId: getMusicReviewsByContentId
+      parameters:
+        - &id007
+          name: musicContentId
+          in: path
+          required: true
+          description: ''
+          schema: *id006
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /api/music/reviews/content:
+    get:
+      summary: Consultar reseñas por referencia Spotify
+      operationId: getMusicReviewsBySpotify
+      parameters:
+        - *id002
+        - *id003
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /api/music/reviews/user/{userId}/content/{musicContentId}:
+    get:
+      summary: Consultar reseña propia por ID interno
+      operationId: getOwnMusicReviewByContentId
+      parameters:
+        - *id004
+        - *id007
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/music/reviews/user/{userId}:
+    get:
+      summary: Consultar reseña propia por Spotify
+      operationId: getOwnMusicReviewBySpotify
+      parameters:
+        - *id004
+        - *id002
+        - *id003
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicReview'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/music/reviews/user/{userId}/reviewed:
+    get:
+      summary: Consultar música reseñada por el usuario
+      operationId: getReviewedMusic
+      parameters:
+        - *id004
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewedMusic'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /api/music/health:
+    get:
+      summary: Consultar diagnóstico de música
+      operationId: musicHealth
+      responses:
+        '200':
+          description: music-service is running
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security: []
+  /api/music/spotify/test:
+    get:
+      summary: Consultar diagnóstico de música
+      operationId: testSpotifyConnection
+      responses:
+        '200':
+          description: Conexión con Spotify correcta. Token obtenido.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token de autenticación, no token de Spotify. Validar firma, vencimiento,
+        emisor y audiencia; usuario UUID en sub en el contrato objetivo.
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    MusicSearchItem:
+      type: object
+      properties:
+        spotifyId:
+          type: string
+        contentType: *id001
+        name:
+          type: string
+        artistName:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - spotifyId
+        - contentType
+        - name
+    MusicDetail:
+      allOf:
+        - $ref: '#/components/schemas/MusicSearchItem'
+        - type: object
+          properties:
+            spotifyUrl:
+              type: string
+              nullable: true
+            releaseDate:
+              type: string
+              nullable: true
+            totalTracks:
+              type: integer
+              nullable: true
+    MusicContent:
+      allOf:
+        - $ref: '#/components/schemas/MusicSearchItem'
+        - type: object
+          properties:
+            id: *id006
+            createdAt:
+              type: string
+              format: date-time
+              description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales
+                sin zona al implementar.
+          required:
+            - id
+    MusicActionInput:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        spotifyId:
+          type: string
+          minLength: 1
+        contentType: *id001
+        name:
+          type: string
+          minLength: 1
+        artistName:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - userId
+        - spotifyId
+        - contentType
+        - name
+    MusicRatingInput:
+      allOf:
+        - $ref: '#/components/schemas/MusicActionInput'
+        - type: object
+          properties:
+            rating:
+              type: number
+              minimum: 1
+              maximum: 5
+          required:
+            - rating
+    MusicReviewInput:
+      allOf:
+        - $ref: '#/components/schemas/MusicActionInput'
+        - type: object
+          properties:
+            reviewText:
+              type: string
+              nullable: true
+    MusicReviewUpdate:
+      type: object
+      properties:
+        reviewText:
+          type: string
+          nullable: true
+    MusicFavorite:
+      type: object
+      properties:
+        id: *id006
+        userId: &id008
+          type: string
+          format: uuid
+        musicContent: &id009
+          $ref: '#/components/schemas/MusicContent'
+        createdAt: &id010
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - id
+        - userId
+        - musicContent
+    MusicRating:
+      type: object
+      properties:
+        id: *id006
+        userId: *id008
+        musicContent: *id009
+        createdAt: *id010
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - id
+        - userId
+        - musicContent
+        - rating
+    MusicReview:
+      type: object
+      properties:
+        id: *id006
+        userId: *id008
+        musicContent: *id009
+        createdAt: *id010
+        reviewText:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - id
+        - userId
+        - musicContent
+    ReviewedMusic:
+      allOf:
+        - $ref: '#/components/schemas/MusicSearchItem'
+        - type: object
+          properties:
+            rating:
+              type: number
+              nullable: true
+            reviewDate:
+              type: string
+              format: date-time
+              description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales
+                sin zona al implementar.
+  responses:
+    Error400:
+      description: Solicitud inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error401:
+      description: Falta un access token válido o está vencido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error403:
+      description: El usuario no tiene permiso sobre el recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error502:
+      description: Falló la respuesta del proveedor externo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error503:
+      description: Una dependencia necesaria no está disponible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error404:
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error409:
+      description: El elemento ya existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

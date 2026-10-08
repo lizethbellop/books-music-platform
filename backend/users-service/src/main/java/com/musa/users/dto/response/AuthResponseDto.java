@@ -1,12 +1,16 @@
 package com.musa.users.dto.response;
 
+import java.time.Instant;
 import java.util.UUID;
 
-/** DTO de respuesta que contiene la información del usuario autenticado y los tokens JWT generados. */
+/** Datos del usuario y tokens de su sesión. */
 public record AuthResponseDto(
         String accessToken,
         String refreshToken,
         UUID userId,
         String fullName,
-        String roleName
+        String roleName,
+        Instant accessTokenExpiresAt,
+        Instant sessionExpiresAt,
+        String username
 ) {}

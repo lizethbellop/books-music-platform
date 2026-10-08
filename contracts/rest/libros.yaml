@@ -1,0 +1,553 @@
+openapi: 3.0.3
+info:
+  title: API de libros de Musa
+  version: 0.1.0
+  description: Contrato objetivo basado en el código local. Autenticación Bearer implementada. Errores uniformes
+    de negocio y extensiones indicadas requieren implementación. No afirma conformidad actual del backend.
+  x-implementation-status: objetivo; autenticación implementada; errores de negocio y extensiones pendientes
+servers:
+  - url: http://localhost:8081
+security:
+  - BearerAuth: []
+paths:
+  /books/search:
+    get:
+      summary: Buscar libros
+      operationId: searchBooks
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: ''
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookSearchItem'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /books/explore:
+    get:
+      summary: Consultar catálogo para explorar
+      operationId: exploreBooks
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookSearchItem'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /books/{externalId}:
+    get:
+      summary: Consultar detalle de libro
+      operationId: getBookDetail
+      description: Contrato consumido por Flutter y perfil. Open Library y DeepL permanecen detrás
+        de libros; sus credenciales no se entregan al cliente.
+      parameters:
+        - &id001
+          name: externalId
+          in: path
+          required: true
+          description: ID de una obra, por ejemplo OL45883W, sin el prefijo /works/.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookDetail'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /books/favorites:
+    get:
+      summary: Consultar favoritos propios
+      operationId: getBookFavorites
+      parameters:
+        - &id002
+          name: userId
+          in: query
+          required: false
+          description: 'Compatibilidad con el cliente actual: debe coincidir con sub del token validado.
+          El backend no lo usa como prueba de identidad.'
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FavoriteBook'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /books/{externalId}/favorites:
+    post:
+      summary: Agregar libro a favoritos
+      operationId: addBookFavorite
+      parameters:
+        - *id001
+        - *id002
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteBook'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+    delete:
+      summary: Quitar libro de favoritos
+      operationId: removeBookFavorite
+      parameters:
+        - *id001
+        - *id002
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /books/library:
+    get:
+      summary: Consultar biblioteca propia
+      operationId: getLibrary
+      parameters:
+        - *id002
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserBook'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+  /books/{externalId}/reading-status:
+    put:
+      summary: Actualizar estado de lectura
+      operationId: updateReadingStatus
+      parameters:
+        - *id001
+        - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - POR_LEER
+                    - LEYENDO
+                    - LEIDO
+              required:
+                - status
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBook'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /books/{externalId}/rating:
+    put:
+      summary: Calificar libro
+      operationId: rateBook
+      description: 'Cambio objetivo: devolver Review DTO igual que las reseñas, en lugar de exponer
+        la entidad JPA actual.'
+      parameters:
+        - *id001
+        - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /books/{externalId}/reviews:
+    get:
+      summary: Consultar reseñas de un libro
+      operationId: getBookReviews
+      parameters:
+        - *id001
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    post:
+      summary: Crear reseña de libro
+      operationId: createBookReview
+      parameters:
+        - *id001
+        - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+    put:
+      summary: Editar reseña propia
+      operationId: updateBookReview
+      parameters:
+        - *id001
+        - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    delete:
+      summary: Eliminar reseña propia
+      operationId: deleteBookReview
+      parameters:
+        - *id001
+        - *id002
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token de autenticación, no token de Spotify. Validar firma, vencimiento,
+        emisor y audiencia; usuario UUID en sub en el contrato objetivo.
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    BookSearchItem:
+      type: object
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        authors:
+          type: array
+          items:
+            type: string
+        firstPublishYear:
+          type: integer
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+      required:
+        - externalId
+        - title
+    BookDetail:
+      type: object
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        authors:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        firstPublishDate:
+          type: string
+          nullable: true
+          description: Texto del proveedor; no asumir ISO date.
+        subjects:
+          type: array
+          items:
+            type: string
+        coverUrl:
+          type: string
+          nullable: true
+      required:
+        - externalId
+        - title
+    FavoriteBook:
+      type: object
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+      required:
+        - externalId
+        - title
+    UserBook:
+      allOf:
+        - $ref: '#/components/schemas/FavoriteBook'
+        - type: object
+          properties:
+            readingStatus:
+              type: string
+              enum:
+                - POR_LEER
+                - LEYENDO
+                - LEIDO
+          required:
+            - readingStatus
+    RatingInput:
+      type: object
+      properties:
+        rating: &id003
+          type: number
+          minimum: 0.5
+          maximum: 5
+      required:
+        - rating
+    ReviewInput:
+      type: object
+      properties:
+        rating: *id003
+        reviewText:
+          type: string
+          nullable: true
+      required:
+        - rating
+    Review:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        externalId:
+          type: string
+        title:
+          type: string
+        rating: *id003
+        reviewText:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - userId
+        - externalId
+        - rating
+  responses:
+    Error400:
+      description: Solicitud inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error401:
+      description: Falta un access token válido o está vencido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error403:
+      description: El usuario no tiene permiso sobre el recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error502:
+      description: Falló la respuesta del proveedor externo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error503:
+      description: Una dependencia necesaria no está disponible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error404:
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error409:
+      description: El elemento ya existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

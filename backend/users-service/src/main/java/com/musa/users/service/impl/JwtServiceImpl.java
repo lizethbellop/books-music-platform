@@ -14,6 +14,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Implementación del servicio de utilidades JWT para la firma, desencriptación y validación de tokens.
@@ -50,7 +52,11 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractClaim(token, claims -> {
+            String email = claims.get("email", String.class);
+
+            return email != null ? email : claims.getSubject();
+        });
     }
 
     @Override
@@ -79,6 +85,65 @@ public class JwtServiceImpl implements JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    @Override
+    public String generateAccessToken(
+            UserDetails userDetails,
+            Instant sessionExpiresAt
+    ) {
+        Instant now = Instant.now();
+
+        if (!sessionExpiresAt.isAfter(now)) {
+            throw new IllegalArgumentException("La sesión ya venció.");
+        }
+
+        Instant accessExpiresAt = now.plusMillis(jwtExpiration);
+
+        if (accessExpiresAt.isAfter(sessionExpiresAt)) {
+            accessExpiresAt = sessionExpiresAt;
+        }
+
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(accessExpiresAt))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    @Override
+    public Instant getAccessTokenExpiresAt(String token) {
+        return extractExpiration(token).toInstant();
+    }
+
+    @Override
+    public String generateAccessToken(
+            UserDetails userDetails,
+            UUID userId,
+            Instant sessionExpiresAt
+    ) {
+        Instant now = Instant.now();
+
+        if (!sessionExpiresAt.isAfter(now)) {
+            throw new IllegalArgumentException("La sesión ya venció.");
+        }
+
+        Instant accessExpiresAt = now.plusMillis(jwtExpiration);
+
+        if (accessExpiresAt.isAfter(sessionExpiresAt)) {
+            accessExpiresAt = sessionExpiresAt;
+        }
+
+        return Jwts.builder()
+                .subject(userId.toString())
+                .claim("email", userDetails.getUsername())
+                .issuer("musa-auth")
+                .audience().add("musa-api").and()
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(accessExpiresAt))
+                .signWith(getSigningKey())
+                .compact();
     }
 }
 

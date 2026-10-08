@@ -10,11 +10,11 @@ import '../../../../core/theme/app_text_styles.dart';
 // Models & Services
 import '../../data/models/login_request_model.dart';
 import '../../data/services/auth_api_service.dart';
+import '../../data/services/auth_session_manager.dart';
 
 // Widgets
 import '../widgets/auth_button.dart';
 import '../widgets/auth_text_field.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  
   Future<void> _handleLogin() async {
     // validar campos del formulario
     if (!_formKey.currentState!.validate()) return;
@@ -53,16 +52,21 @@ class _LoginScreenState extends State<LoginScreen> {
       final request = LoginRequestModel(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        rememberMe: _rememberMe,
       );
 
       // consumir el endpoint HTTP
-      await _authApiService.login(request);
+      final session = await _authApiService.login(request);
+
+      await AuthSessionManager.instance.setSession(
+        session,
+        rememberMe: request.rememberMe,
+      );
 
       if (!mounted) return;
 
       // navegar a la pantalla principal si el backend responde exitosamente
       Navigator.pushReplacementNamed(context, AppRoutes.home);
-
     } catch (e) {
       if (!mounted) return;
 
@@ -110,7 +114,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: AppSpacing.sm),
 
                     // Título y Subtítulo
-                    Text('Bienvenida a Musa', style: AppTextStyles.pageTitle.copyWith(fontSize: 28)),
+                    Text(
+                      'Bienvenida a Musa',
+                      style: AppTextStyles.pageTitle.copyWith(fontSize: 28),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       'Inicia sesión para continuar.',
@@ -144,7 +151,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscurePassword,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                           color: AppColors.textSecondary,
                           size: 20,
                         ),
@@ -164,8 +173,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: AppSpacing.sm),
 
                     // Recordarme y Olvidaste tu contraseña
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Row(
                           children: [
@@ -204,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                  
+
                     const SizedBox(height: AppSpacing.md),
 
                     // Botón de Iniciar Sesión
@@ -220,7 +230,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const Expanded(child: Divider(color: AppColors.border)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                          ),
                           child: Text('o', style: AppTextStyles.secondary),
                         ),
                         const Expanded(child: Divider(color: AppColors.border)),
@@ -241,25 +253,40 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('G', style: AppTextStyles.button.copyWith(fontWeight: FontWeight.w800)),
+                          Text(
+                            'G',
+                            style: AppTextStyles.button.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(width: AppSpacing.sm),
-                          Text('Continuar con Google', style: AppTextStyles.button),
+                          Text(
+                            'Continuar con Google',
+                            style: AppTextStyles.button,
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
                     // Enlace a Registro
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text('¿No tienes una cuenta? ', style: AppTextStyles.secondary),
+                        Text(
+                          '¿No tienes una cuenta? ',
+                          style: AppTextStyles.secondary,
+                        ),
                         TextButton(
                           onPressed: () {
                             Navigator.pushNamed(context, AppRoutes.register);
                           },
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),

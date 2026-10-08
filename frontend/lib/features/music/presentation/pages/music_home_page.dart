@@ -12,7 +12,8 @@ import '../widgets/music_filter_chip.dart';
 import 'music_detail_page.dart';
 
 class MusicHomePage extends StatefulWidget {
-  const MusicHomePage({super.key});
+  final String userId;
+  const MusicHomePage({super.key, required this.userId});
 
   @override
   State<MusicHomePage> createState() => _MusicHomePageState();
@@ -41,7 +42,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   Future<void> _loadReviewedMusic() async {
     try {
-      final reviewed = await _musicApiService.getReviewedMusic(userId: 1);
+      final reviewed = await _musicApiService.getReviewedMusic(userId: widget.userId);
 
       if (!mounted) return;
 
@@ -108,7 +109,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
       body: Container(
         color: AppColors.cream,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.sizeOf(context).width < 800 ? 20 : 48,
+            vertical: 36,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,8 +155,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               if (_hasSearched) const SizedBox(height: 38),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 8,
                 children: [
                   Text(
                     'Mis músicas reseñadas',
@@ -190,6 +197,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
                           (item) => Padding(
                             padding: const EdgeInsets.only(right: 16),
                             child: MusicCard(
+                              userId: widget.userId,
                               item: item,
                               onReturn: _loadReviewedMusic,
                             ),
@@ -201,8 +209,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               const SizedBox(height: 44),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 8,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,8 +247,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               const SizedBox(height: 42),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 8,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +370,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
                 childAspectRatio: 0.72,
               ),
               itemBuilder: (context, index) {
-                return _SearchResultCard(item: _searchResults[index]);
+                return _SearchResultCard(item: _searchResults[index], userId: widget.userId);
               },
             );
           },
@@ -442,9 +456,10 @@ class _ExploreGrid extends StatelessWidget {
 }
 
 class _SearchResultCard extends StatelessWidget {
+  final String userId;
   final MusicSearchItem item;
 
-  const _SearchResultCard({required this.item});
+  const _SearchResultCard({required this.item, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +473,7 @@ class _SearchResultCard extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) {
-                return MusicDetailPage(item: item);
+                return MusicDetailPage(item: item, userId: userId);
               },
             ),
           );

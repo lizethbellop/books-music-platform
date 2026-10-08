@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import com.musa.books.config.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/books")
@@ -29,9 +32,12 @@ public class ReviewController {
     @PutMapping("/{externalId}/rating")
     public ResponseEntity<Review> rateBook(
             @PathVariable String externalId,
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId,
             @Valid @RequestBody RatingRequest request
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         Review review = reviewService.rateBook(
                 userId,
@@ -46,9 +52,12 @@ public class ReviewController {
     @PostMapping("/{externalId}/reviews")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable String externalId,
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId,
             @Valid@RequestBody ReviewRequest request
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         Review review = reviewService.createReview(
                 userId,
@@ -64,9 +73,12 @@ public class ReviewController {
     @PutMapping("/{externalId}/reviews")
     public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable String externalId,
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId,
             @Valid @RequestBody ReviewRequest request
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         Review review = reviewService.updateReview(
                 userId,
@@ -82,8 +94,11 @@ public class ReviewController {
     @DeleteMapping("/{externalId}/reviews")
     public ResponseEntity<Void> deleteReview(
             @PathVariable String externalId,
-            @RequestParam UUID userId
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         reviewService.deleteReview(
                 userId,

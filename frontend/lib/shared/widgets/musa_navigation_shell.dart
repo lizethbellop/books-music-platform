@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/routes/app_shell.dart';
+import '../../core/routes/app_section.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/profile/data/models/profile_model.dart';
 import '../../features/profile/data/services/profile_api_service.dart';
@@ -13,6 +13,8 @@ class MusaNavigationShell extends StatefulWidget {
   final ValueChanged<MusaDestination> onDestinationSelected;
   final Widget child;
   final String userId;
+  final AppSection? selectedSection;
+  final ValueChanged<AppSection>? onSectionSelected;
 
   const MusaNavigationShell({
     super.key,
@@ -20,6 +22,8 @@ class MusaNavigationShell extends StatefulWidget {
     required this.onDestinationSelected,
     required this.child,
     required this.userId,
+    this.selectedSection,
+    this.onSectionSelected,
   });
 
   @override
@@ -69,14 +73,49 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
 
             return Scaffold(
               backgroundColor: AppColors.cream,
+              appBar: isDesktop
+                  ? null
+                  : AppBar(
+                      backgroundColor: AppColors.warmWhite,
+                      title: const Text('musa.'),
+                    ),
+              drawer: isDesktop
+                  ? null
+                  : Drawer(
+                      backgroundColor: AppColors.warmWhite,
+                      child: SafeArea(
+                        child: MusaSidebar(
+                          profilePictureUrl: profilePictureUrl,
+                          selectedSection:
+                              widget.selectedSection ??
+                              _toAppSection(widget.selectedDestination),
+                          onSectionSelected: (section) {
+                            Navigator.of(context).pop();
+                            if (widget.onSectionSelected != null) {
+                              widget.onSectionSelected!(section);
+                            } else {
+                              final destination = _toMusaDestination(section);
+                              if (destination != null) {
+                                widget.onDestinationSelected(destination);
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ),
               body: isDesktop
                   ? Row(
                       children: [
                         MusaSidebar(
-                          selectedSection: _toAppSection(
-                            widget.selectedDestination,
-                          ),
+                          profilePictureUrl: profilePictureUrl,
+                          selectedSection:
+                              widget.selectedSection ??
+                              _toAppSection(widget.selectedDestination),
                           onSectionSelected: (section) {
+                            if (widget.onSectionSelected != null) {
+                              widget.onSectionSelected!(section);
+                              return;
+                            }
                             final destination = _toMusaDestination(section);
                             if (destination != null) {
                               widget.onDestinationSelected(destination);

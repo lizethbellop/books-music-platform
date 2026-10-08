@@ -44,6 +44,7 @@ class RegisterControllerTest {
         String json = """
                 {
                     "fullName": "Ana López",
+                    "username": "ana_lopez",
                     "email": "ana@usi.com",
                     "password": "Password123!",
                     "confirmPassword": "Password123!",
@@ -59,6 +60,20 @@ class RegisterControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("Registro exitoso."));
+    }
+
+    @Test
+    @WithMockUser
+    void register_debeRechazarUsernameAusenteOInvalido() throws Exception {
+        String base = "{\"fullName\":\"Ana\",\"email\":\"ana@example.com\","
+                + "\"password\":\"Password123!\",\"confirmPassword\":\"Password123!\",\"roleName\":\"USER\"";
+        for (String suffix : new String[]{"}", ",\"username\":\"no espacios\"}"}) {
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON).content(base + suffix))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.username").exists());
+        }
+        org.mockito.Mockito.verifyNoInteractions(registerService);
     }
 }
 

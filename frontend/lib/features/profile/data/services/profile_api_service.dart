@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import '../../../auth/data/services/auth_session_manager.dart';
 import '../exceptions/profile_api_exception.dart';
 import '../models/profile_model.dart';
 import '../models/update_profile_request.dart';
@@ -23,17 +24,47 @@ class ProfileApiService {
     defaultValue: 'http://localhost:8082/api/profiles',
   );
 
-  Future<ProfileModel> getOwnProfile({required String userId}) async {
-    final uri = Uri.parse('$baseUrl/me');
+  Future<Map<String, String>> _authenticatedHeaders({
+    bool jsonBody = false,
+  }) async {
+    final token = await AuthSessionManager.instance.getAccessToken();
 
-    final response = await http.get(uri, headers: {'X-User-Id': userId});
+    return {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      if (jsonBody) 'Content-Type': 'application/json',
+    };
+  }
+
+  Future<ProfileModel> ensureOwnProfile() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/me'),
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 200) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return ProfileModel.fromJson(json);
+  }
 
+  Future<ProfileModel> getOwnProfile({required String userId}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/me'),
+      headers: await _authenticatedHeaders(),
+    );
+
+    if (response.statusCode == 404) {
+      return ensureOwnProfile();
+    }
+
+    if (response.statusCode != 200) {
+      throw ProfileApiException.fromStatusCode(response.statusCode);
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
     return ProfileModel.fromJson(json);
   }
 
@@ -45,7 +76,7 @@ class ProfileApiService {
 
     final response = await http.put(
       uri,
-      headers: {'Content-Type': 'application/json', 'X-User-Id': userId},
+      headers: await _authenticatedHeaders(jsonBody: true),
       body: jsonEncode(request.toJson()),
     );
 
@@ -54,7 +85,6 @@ class ProfileApiService {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-
     return ProfileModel.fromJson(json);
   }
 
@@ -66,7 +96,9 @@ class ProfileApiService {
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/me/photo'),
-    )..headers['X-User-Id'] = userId;
+    );
+
+    request.headers.addAll(await _authenticatedHeaders());
 
     request.files.add(
       http.MultipartFile.fromBytes(
@@ -85,9 +117,11 @@ class ProfileApiService {
     );
 
     final response = await http.Response.fromStream(await request.send());
+
     if (response.statusCode != 200) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
     }
+
     return ProfileModel.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
@@ -96,7 +130,10 @@ class ProfileApiService {
   Future<PreferencesModel> getOwnPreferences({required String userId}) async {
     final uri = Uri.parse('$baseUrl/me/preferences');
 
-    final response = await http.get(uri, headers: {'X-User-Id': userId});
+    final response = await http.get(
+      uri,
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 200) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
@@ -114,7 +151,7 @@ class ProfileApiService {
 
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json', 'X-User-Id': userId},
+      headers: await _authenticatedHeaders(jsonBody: true),
       body: jsonEncode(request.toJson()),
     );
 
@@ -126,10 +163,26 @@ class ProfileApiService {
     return PreferenceElementModel.fromJson(json);
   }
 
+  Future<void> removePreferenceElement({
+    required String userId,
+    required String elementId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/me/preferences/$elementId'),
+      headers: await _authenticatedHeaders(),
+    );
+    if (response.statusCode != 204) {
+      throw ProfileApiException.fromStatusCode(response.statusCode);
+    }
+  }
+
   Future<List<UserListModel>> getOwnLists({required String userId}) async {
     final uri = Uri.parse('$baseUrl/me/lists');
 
-    final response = await http.get(uri, headers: {'X-User-Id': userId});
+    final response = await http.get(
+      uri,
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 200) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
@@ -148,7 +201,10 @@ class ProfileApiService {
   }) async {
     final uri = Uri.parse('$baseUrl/me/lists/$listId');
 
-    final response = await http.get(uri, headers: {'X-User-Id': userId});
+    final response = await http.get(
+      uri,
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 200) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
@@ -166,7 +222,7 @@ class ProfileApiService {
 
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json', 'X-User-Id': userId},
+      headers: await _authenticatedHeaders(jsonBody: true),
       body: jsonEncode(request.toJson()),
     );
 
@@ -187,7 +243,7 @@ class ProfileApiService {
 
     final response = await http.put(
       uri,
-      headers: {'Content-Type': 'application/json', 'X-User-Id': userId},
+      headers: await _authenticatedHeaders(jsonBody: true),
       body: jsonEncode(request.toJson()),
     );
 
@@ -208,7 +264,7 @@ class ProfileApiService {
 
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json', 'X-User-Id': userId},
+      headers: await _authenticatedHeaders(jsonBody: true),
       body: jsonEncode(request.toJson()),
     );
 
@@ -227,7 +283,10 @@ class ProfileApiService {
   }) async {
     final uri = Uri.parse('$baseUrl/me/lists/$listId/elements/$elementId');
 
-    final response = await http.delete(uri, headers: {'X-User-Id': userId});
+    final response = await http.delete(
+      uri,
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 204) {
       throw ProfileApiException.fromStatusCode(response.statusCode);
@@ -240,7 +299,10 @@ class ProfileApiService {
   }) async {
     final uri = Uri.parse('$baseUrl/me/lists/$listId');
 
-    final response = await http.delete(uri, headers: {'X-User-Id': userId});
+    final response = await http.delete(
+      uri,
+      headers: await _authenticatedHeaders(),
+    );
 
     if (response.statusCode != 204) {
       throw ProfileApiException.fromStatusCode(response.statusCode);

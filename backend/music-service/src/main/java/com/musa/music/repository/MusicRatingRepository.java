@@ -1,5 +1,7 @@
 package com.musa.music.repository;
 
+import java.util.UUID;
+
 import com.musa.music.entity.MusicRating;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,7 +11,7 @@ public interface MusicRatingRepository
         extends JpaRepository<MusicRating, Long> {
 
     Optional<MusicRating> findByUserIdAndMusicContentId(
-            Long userId,
+            UUID userId,
             Long musicContentId
     );
 }

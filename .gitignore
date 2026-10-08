@@ -209,3 +209,5 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
+# IDE compiled copies can include local credentials.
+**/bin/

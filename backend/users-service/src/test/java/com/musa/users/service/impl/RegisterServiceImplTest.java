@@ -50,7 +50,7 @@ class RegisterServiceImplTest {
     @BeforeEach
     void setUp() {
         // DTO con contraseñas coincidentes para el flujo feliz y pruebas estándar
-        request = new RegisterRequestDto("Ana López", "ana@usi.com", "Password123!", "Password123!", "USER");
+        request = new RegisterRequestDto("Ana López", "ana@usi.com", "Password123!", "Password123!", "USER", "Ana_Lopez");
     }
 
     @Test
@@ -62,7 +62,8 @@ class RegisterServiceImplTest {
                 "ana@usi.com",
                 "Password123!",
                 "DiferentePassword!",
-                "USER"
+                "USER",
+                "Ana_Lopez"
         );
 
         // Act & Assert
@@ -83,7 +84,7 @@ class RegisterServiceImplTest {
 
         verify(userRepository).existsByEmail("ana@usi.com");
         verifyNoInteractions(roleRepository, passwordEncoder, emailService);//Confirma que el flujo se detuvo tempranamente y nunca llegó a tocar a estos servicios o repositorios.
-        verify(userRepository, never()).save(any());// Garantiza estrictamente que un método crítico (como guardar en BD) jamás fue ejecutado.
+        verify(userRepository, never()).saveAndFlush(any());// Garantiza estrictamente que un método crítico (como guardar en BD) jamás fue ejecutado.
     }
 
     @Test
@@ -98,7 +99,7 @@ class RegisterServiceImplTest {
 
         verify(userRepository).existsByEmail(request.email());
         verify(roleRepository).findByName("USER");
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
         verifyNoInteractions(passwordEncoder, emailService);
     }
 
@@ -113,7 +114,7 @@ class RegisterServiceImplTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(roleRepository.findByName("USER")).thenReturn(Optional.of(role));
         when(passwordEncoder.encode("Password123!")).thenReturn("HASH_SIMULADO");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         MessageResponseDto response = registerService.register(request);
@@ -122,7 +123,7 @@ class RegisterServiceImplTest {
         assertEquals("Registro exitoso.", response.message());
 
         verify(passwordEncoder).encode("Password123!");
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).saveAndFlush(any(User.class));
         verify(emailService).sendWelcomeEmail("ana@usi.com", "Ana López");
     }
 
@@ -137,23 +138,45 @@ class RegisterServiceImplTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(roleRepository.findByName("USER")).thenReturn(Optional.of(role));
         when(passwordEncoder.encode(request.password())).thenReturn("HASH_SIMULADO");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));// Simula un comportamiento dinámico en el mock (aquí imita a JPA devolviendo el mismo objeto User que recibe para guardar).
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));// Simula un comportamiento dinámico en el mock (aquí imita a JPA devolviendo el mismo objeto User que recibe para guardar).
 
         // Act
         registerService.register(request);
 
         // Assert: Intercepta y "atrapa" el objeto interno creado dentro del servicio para poder inspeccionar sus atributos.
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
+        verify(userRepository).saveAndFlush(captor.capture());
 
         User savedUser = captor.getValue();
 
         assertAll(
                 () -> assertEquals("Ana López", savedUser.getFullName()),
+                () -> assertEquals("ana_lopez", savedUser.getUsername()),
                 () -> assertEquals("ana@usi.com", savedUser.getEmail()),
                 () -> assertEquals("HASH_SIMULADO", savedUser.getPasswordHash()),
                 () -> assertSame(role, savedUser.getRole()),
                 () -> assertTrue(savedUser.getIsActive())
         );
+    }
+
+    @Test
+    void register_debeRechazarUsernameSinDistinguirMayusculas() {
+        when(userRepository.existsByUsernameIgnoreCase("ana_lopez")).thenReturn(true);
+        assertThrows(UserAlreadyExistsException.class, () -> registerService.register(request));
+        verify(userRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void register_debeResponderConflictoSiOtraPeticionGanaLaRestriccionUnica() {
+        Role role = new Role();
+        role.setName("USER");
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role));
+        when(passwordEncoder.encode(request.password())).thenReturn("HASH_SIMULADO");
+        when(userRepository.saveAndFlush(any(User.class))).thenThrow(
+                new org.springframework.dao.DataIntegrityViolationException("unique",
+                        new java.sql.SQLException("username duplicate", "23505")));
+        assertThrows(UserAlreadyExistsException.class, () -> registerService.register(request));
+        verifyNoInteractions(emailService);
     }
 }

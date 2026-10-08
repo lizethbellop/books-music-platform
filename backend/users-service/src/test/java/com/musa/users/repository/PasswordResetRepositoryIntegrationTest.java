@@ -5,6 +5,7 @@ import com.musa.users.entity.Role;
 import com.musa.users.entity.User;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("integration")
 @SpringBootTest
 @Transactional
 public class PasswordResetRepositoryIntegrationTest {
@@ -40,6 +42,7 @@ public class PasswordResetRepositoryIntegrationTest {
 
         // ARRANGE: Crear y persistir el Usuario asociado
         User user = new User();
+        user.setUsername("test_" + java.util.UUID.randomUUID().toString().replace("-", ""));
         user.setFullName("Carlos Gómez");
         user.setEmail("carlos@usi.com");
         user.setPasswordHash("HASH_DE_PRUEBA");

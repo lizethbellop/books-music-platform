@@ -8,14 +8,16 @@ import '../../data/models/preferences_model.dart';
 import '../../data/models/user_list_detail_model.dart';
 import '../../data/models/user_list_model.dart';
 import '../../data/services/profile_api_service.dart';
+import '../../data/models/list_element_model.dart';
+import '../../data/models/add_list_element_request.dart';
+import 'list_content_search_dialog.dart';
+import 'collection_poster_strip.dart';
+import '../../data/models/add_preference_element_request.dart';
 
 class ProfileCollections extends StatefulWidget {
   final String userId;
 
-  const ProfileCollections({
-    super.key,
-    required this.userId,
-  });
+  const ProfileCollections({super.key, required this.userId});
 
   @override
   State<ProfileCollections> createState() => _ProfileCollectionsState();
@@ -24,6 +26,7 @@ class ProfileCollections extends StatefulWidget {
 class _ProfileCollectionsState extends State<ProfileCollections> {
   final ProfileApiService _api = ProfileApiService();
 
+  final Map<String, Future<UserListDetailModel>> _listDetails = {};
   late Future<PreferencesModel> _preferencesFuture;
   late Future<List<UserListModel>> _listsFuture;
 
@@ -34,8 +37,46 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
   }
 
   void _reload() {
+    _listDetails.clear();
     _preferencesFuture = _api.getOwnPreferences(userId: widget.userId);
     _listsFuture = _api.getOwnLists(userId: widget.userId);
+  }
+
+  bool _preferencesBusy = false;
+
+  Future<void> _changePreference(Future<void> Function() action) async {
+    if (_preferencesBusy) return;
+    setState(() => _preferencesBusy = true);
+    try {
+      await action();
+      if (mounted) {
+        setState(() {
+          _preferencesFuture = _api.getOwnPreferences(userId: widget.userId);
+        });
+      }
+    } catch (error) {
+      if (mounted) _showError(error);
+    } finally {
+      if (mounted) setState(() => _preferencesBusy = false);
+    }
+  }
+
+  Future<void> _addPreference() async {
+    if (_preferencesBusy) return;
+    final selection = await showDialog<ListContentSelection>(
+      context: context,
+      builder: (_) => const ListContentSearchDialog(),
+    );
+    if (!mounted || selection == null) return;
+    await _changePreference(() async {
+      await _api.addPreferenceElement(
+        userId: widget.userId,
+        request: AddPreferenceElementRequest(
+          elementType: selection.elementType,
+          referenceId: selection.referenceId,
+        ),
+      );
+    });
   }
 
   void _refresh() {
@@ -63,13 +104,10 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
                   TextFormField(
                     controller: nameController,
                     maxLength: 100,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre',
-                    ),
-                    validator: (value) =>
-                        value == null || value.trim().isEmpty
-                            ? 'Escribe un nombre'
-                            : null,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Escribe un nombre'
+                        : null,
                   ),
                   TextFormField(
                     controller: descriptionController,
@@ -96,10 +134,9 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
                   dialogContext,
                   CreateUserListRequest(
                     name: nameController.text.trim(),
-                    description:
-                        descriptionController.text.trim().isEmpty
-                            ? null
-                            : descriptionController.text.trim(),
+                    description: descriptionController.text.trim().isEmpty
+                        ? null
+                        : descriptionController.text.trim(),
                   ),
                 );
               },
@@ -111,16 +148,12 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
 
       if (request == null || !mounted) return;
 
-      await _api.createList(
-        userId: widget.userId,
-        request: request,
-      );
+      await _api.createList(userId: widget.userId, request: request);
 
       if (!mounted) return;
       _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lista creada')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Lista creada')));
     } catch (error) {
       if (!mounted) return;
       _showError(error);
@@ -141,8 +174,11 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
 
       await showDialog<void>(
         context: context,
-        builder: (dialogContext) => _ListDetailDialog(detail: detail),
+        barrierDismissible: false,
+        builder: (dialogContext) =>
+            _ListDetailDialog(detail: detail, userId: widget.userId),
       );
+      if (mounted) setState(() => _listDetails.remove(list.id));
     } catch (error) {
       if (!mounted) return;
       _showError(error);
@@ -154,24 +190,38 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
         ? error.message
         : 'No fue posible conectarse con el servicio de Perfil.';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 700;
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionTitle(
-              title: 'Mis preferencias',
-              icon: Icons.favorite_border,
+            Row(
+              children: [
+                const Expanded(
+                  child: _SectionTitle(
+                    title: 'Mis preferencias',
+                    icon: Icons.favorite_border,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Actualizar preferencias',
+                  onPressed: _preferencesBusy ? null : _refresh,
+                  icon: const Icon(Icons.refresh),
+                ),
+                IconButton(
+                  tooltip: 'Agregar preferencia',
+                  onPressed: _preferencesBusy ? null : _addPreference,
+                  icon: const Icon(Icons.add),
+                ),
+              ],
             ),
+            if (_preferencesBusy) const LinearProgressIndicator(),
             const SizedBox(height: 14),
             FutureBuilder<PreferencesModel>(
               future: _preferencesFuture,
@@ -193,24 +243,16 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
                           'Aún no tienes preferencias guardadas.',
                           style: AppTextStyles.secondary,
                         )
-                      : Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final element in elements)
-                              Chip(
-                                label: Text(
-                                  '${_typeLabel(element.elementType)}'
-                                  ' · ${element.referenceId}',
-                                ),
-                                backgroundColor:
-                                    element.elementType == 'BOOK' ||
-                                            element.elementType == 'AUTHOR'
-                                        ? AppColors.lilac
-                                        : AppColors.mint,
-                                side: BorderSide.none,
-                              ),
-                          ],
+                      : CollectionPosterStrip(
+                          elements: elements,
+                          busy: _preferencesBusy,
+                          removeLabel: 'Quitar preferencia',
+                          onRemove: (element) => _changePreference(
+                            () => _api.removePreferenceElement(
+                              userId: widget.userId,
+                              elementId: element.id,
+                            ),
+                          ),
                         ),
                 );
               },
@@ -259,51 +301,73 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
                   );
                 }
 
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: lists.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: isDesktop ? 2 : 1,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    mainAxisExtent: 130,
-                  ),
-                  itemBuilder: (context, index) {
-                    final list = lists[index];
-                    return InkWell(
-                      onTap: () => _openList(list),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
+                return Column(
+                  children: [
+                    for (final list in lists)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(18),
                         decoration: _cardDecoration(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.library_music_outlined,
-                              color: AppColors.ink,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    list.name,
+                                    style: AppTextStyles.cardTitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => _openList(list),
+                                  child: const Text('Abrir'),
+                                ),
+                              ],
                             ),
-                            const Spacer(),
-                            Text(
-                              list.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.cardTitle,
-                            ),
-                            Text(
-                              list.description?.isNotEmpty == true
-                                  ? list.description!
-                                  : 'Toca para ver esta lista',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.secondary,
+                            if (list.description?.isNotEmpty == true)
+                              Text(
+                                list.description!,
+                                style: AppTextStyles.secondary,
+                              ),
+                            const SizedBox(height: 12),
+                            FutureBuilder<UserListDetailModel>(
+                              future: _listDetails.putIfAbsent(
+                                list.id,
+                                () => _api.getListDetail(
+                                  userId: widget.userId,
+                                  listId: list.id,
+                                ),
+                              ),
+                              builder: (context, detail) {
+                                if (detail.hasError) {
+                                  return _ErrorCard(
+                                    onRetry: () => setState(
+                                      () => _listDetails.remove(list.id),
+                                    ),
+                                  );
+                                }
+                                if (!detail.hasData) {
+                                  return const _LoadingCard();
+                                }
+                                if (detail.data!.elements.isEmpty) {
+                                  return Text(
+                                    'Esta lista todavía está vacía.',
+                                    style: AppTextStyles.secondary,
+                                  );
+                                }
+                                return CollectionPosterStrip(
+                                  elements: detail.data!.elements,
+                                );
+                              },
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                  ],
                 );
               },
             ),
@@ -314,55 +378,225 @@ class _ProfileCollectionsState extends State<ProfileCollections> {
   }
 }
 
-class _ListDetailDialog extends StatelessWidget {
+class _ListDetailDialog extends StatefulWidget {
   final UserListDetailModel detail;
+  final String userId;
 
-  const _ListDetailDialog({required this.detail});
+  const _ListDetailDialog({required this.detail, required this.userId});
+
+  @override
+  State<_ListDetailDialog> createState() => _ListDetailDialogState();
+}
+
+class _ListDetailDialogState extends State<_ListDetailDialog> {
+  final _api = ProfileApiService();
+
+  late UserListDetailModel _detail = widget.detail;
+  bool _busy = false;
+  String? _errorMessage;
+
+  Future<void> _reloadDetail() async {
+    final updated = await _api.getListDetail(
+      userId: widget.userId,
+      listId: _detail.id,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _detail = updated;
+    });
+  }
+
+  Future<void> _refresh() async {
+    if (_busy) return;
+
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _reloadDetail();
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo actualizar la lista.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _runChange(Future<void> Function() action) async {
+    if (_busy) return;
+
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
+
+    var saved = false;
+
+    try {
+      await action();
+      saved = true;
+      await _reloadDetail();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = saved
+            ? 'El cambio se guardó, pero no pudimos recargar '
+                  'la lista. Pulsa Actualizar.'
+            : error is ProfileApiException
+            ? error.message
+            : 'No se pudo completar el cambio. '
+                  'Actualiza la lista para comprobar su estado.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _addContent() async {
+    if (_busy) return;
+
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
+
+    ListContentSelection? selection;
+
+    try {
+      selection = await showDialog<ListContentSelection>(
+        context: context,
+        builder: (_) => const ListContentSearchDialog(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+
+    if (!mounted || selection == null) return;
+
+    final chosen = selection;
+
+    final alreadyExists = _detail.elements.any(
+      (element) =>
+          element.elementType == chosen.elementType &&
+          element.referenceId == chosen.referenceId,
+    );
+
+    if (alreadyExists) {
+      setState(() {
+        _errorMessage = 'Ese contenido ya está en esta lista.';
+      });
+      return;
+    }
+
+    await _runChange(() async {
+      await _api.addListElement(
+        userId: widget.userId,
+        listId: _detail.id,
+        request: AddListElementRequest(
+          elementType: chosen.elementType,
+          referenceId: chosen.referenceId,
+        ),
+      );
+    });
+  }
+
+  Future<void> _removeElement(ListElementModel element) async {
+    await _runChange(() async {
+      await _api.removeListElement(
+        userId: widget.userId,
+        listId: _detail.id,
+        elementId: element.id,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.warmWhite,
-      title: Text(detail.name, style: AppTextStyles.sectionTitle),
-      content: SizedBox(
-        width: 480,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (detail.description?.isNotEmpty == true) ...[
-              Text(detail.description!, style: AppTextStyles.body),
-              const SizedBox(height: 16),
-            ],
-            if (detail.elements.isEmpty)
-              Text(
-                'Esta lista todavía está vacía.',
-                style: AppTextStyles.secondary,
-              )
-            else
-              for (final element in detail.elements)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    element.elementType == 'BOOK'
-                        ? Icons.book_outlined
-                        : Icons.music_note_outlined,
-                    color: AppColors.ink,
-                  ),
-                  title: Text(
-                    '${_typeLabel(element.elementType)}'
-                    ' · ${element.referenceId}',
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        backgroundColor: AppColors.warmWhite,
+        title: Text(
+          _detail.name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.sectionTitle,
+        ),
+        content: SizedBox(
+          width: 520,
+          height: MediaQuery.sizeOf(context).height * 0.55,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_busy) ...[
+                const LinearProgressIndicator(),
+                const SizedBox(height: 12),
+              ],
+              if (_errorMessage != null) ...[
+                Text(_errorMessage!, style: AppTextStyles.secondary),
+                const SizedBox(height: 12),
+              ],
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_detail.description?.isNotEmpty == true) ...[
+                        Text(_detail.description!, style: AppTextStyles.body),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_detail.elements.isEmpty)
+                        Text(
+                          'Esta lista todavía está vacía.',
+                          style: AppTextStyles.secondary,
+                        )
+                      else
+                        CollectionPosterStrip(
+                          elements: _detail.elements,
+                          busy: _busy,
+                          onRemove: _removeElement,
+                        ),
+                    ],
                   ),
                 ),
-          ],
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : _refresh,
+            child: const Text('Actualizar'),
+          ),
+          FilledButton.icon(
+            onPressed: _busy ? null : _addContent,
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar contenido'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.lavender,
+              foregroundColor: AppColors.ink,
+            ),
+          ),
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cerrar'),
-        ),
-      ],
     );
   }
 }
@@ -371,10 +605,7 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final IconData icon;
 
-  const _SectionTitle({
-    required this.title,
-    required this.icon,
-  });
+  const _SectionTitle({required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -382,9 +613,7 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.ink),
         const SizedBox(width: 10),
-        Flexible(
-          child: Text(title, style: AppTextStyles.sectionTitle),
-        ),
+        Flexible(child: Text(title, style: AppTextStyles.sectionTitle)),
       ],
     );
   }
@@ -412,10 +641,7 @@ class _ErrorCard extends StatelessWidget {
     return Row(
       children: [
         const Expanded(child: Text('No se pudo cargar esta sección.')),
-        TextButton(
-          onPressed: onRetry,
-          child: const Text('Reintentar'),
-        ),
+        TextButton(onPressed: onRetry, child: const Text('Reintentar')),
       ],
     );
   }
@@ -427,14 +653,4 @@ BoxDecoration _cardDecoration() {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(color: AppColors.border),
   );
-}
-
-String _typeLabel(String type) {
-  return switch (type) {
-    'BOOK' => 'Libro',
-    'SONG' => 'Canción',
-    'ARTIST' => 'Artista',
-    'AUTHOR' => 'Autor',
-    _ => type,
-  };
 }

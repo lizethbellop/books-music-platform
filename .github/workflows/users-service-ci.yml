@@ -1,4 +1,31 @@
-name: users-service-ci.yml
+name: Users Service CI
 on:
-
+  push:
+    paths: ['backend/users-service/**', '.github/workflows/users-service-ci.yml']
+  pull_request:
+    paths: ['backend/users-service/**', '.github/workflows/users-service-ci.yml']
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: BDAuth_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d BDAuth_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB_PASSWORD: test-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: bash mvnw test
+        working-directory: backend/users-service
