@@ -1,6 +1,7 @@
 package com.musa.users.service.impl;
 
 import com.musa.users.dto.request.ResetPasswordRequestDto;
+import com.musa.users.dto.request.VerifyTokenRequestDto;
 import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.entity.PasswordReset;
 import com.musa.users.entity.User;
@@ -26,6 +27,20 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     private final UserRepository userRepository;
     private final PasswordResetRepository passwordResetRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Override
+    @Transactional
+    public MessageResponseDto verifyToken(VerifyTokenRequestDto request) {
+        PasswordReset resetEntity = passwordResetRepository.findByTokenHash(request.token())
+                .orElseThrow(() -> new InvalidTokenException("El token de recuperación es inválido."));
+
+        if (resetEntity.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            passwordResetRepository.delete(resetEntity);
+            throw new TokenExpiredException("El token de recuperación ha expirado.");
+        }
+
+        return new MessageResponseDto("Token válido.");
+    }
 
     @Override
     @Transactional

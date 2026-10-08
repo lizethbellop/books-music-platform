@@ -3,7 +3,7 @@ INSERT INTO music_content (
     content_type,
     name,
     artist_name,
-    image_url
+    image_url,
     created_at
 )
 VALUES
@@ -13,7 +13,7 @@ VALUES
     'ARTIST',
     'Cris MJ',
     'Cris MJ',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -21,7 +21,7 @@ VALUES
     'SONG',
     'Una Noche en Medellín',
     'Cris MJ',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -29,7 +29,7 @@ VALUES
     'SONG',
     'Gata Only',
     'Cris MJ',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -37,7 +37,7 @@ VALUES
     'SONG',
     'Déjame Pensar',
     'Cris MJ',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 
@@ -46,7 +46,7 @@ VALUES
     'ARTIST',
     'Chuyin',
     'Chuyin',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -54,7 +54,7 @@ VALUES
     'SONG',
     'Pues Ya Ni Pedo',
     'Chuyin',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -62,7 +62,7 @@ VALUES
     'SONG',
     'Inmortal',
     'Chuyin',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -70,7 +70,7 @@ VALUES
     'SONG',
     'Casaditas',
     'Chuyin',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 
@@ -79,7 +79,7 @@ VALUES
     'ARTIST',
     'Omar Courtz',
     'Omar Courtz',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -87,7 +87,7 @@ VALUES
     'SONG',
     '2K16',
     'Omar Courtz',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -95,7 +95,7 @@ VALUES
     'SONG',
     'Luces de Colores',
     'Omar Courtz',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 
@@ -104,7 +104,7 @@ VALUES
     'ARTIST',
     'Bad Gyal',
     'Bad Gyal',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -112,7 +112,7 @@ VALUES
     'SONG',
     'Fiebre',
     'Bad Gyal',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -120,7 +120,7 @@ VALUES
     'SONG',
     'Chulo',
     'Bad Gyal',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -128,7 +128,7 @@ VALUES
     'ALBUM',
     'La Joia',
     'Bad Gyal',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 
@@ -137,7 +137,7 @@ VALUES
     'ARTIST',
     'Soda Stereo',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -145,7 +145,7 @@ VALUES
     'SONG',
     'De Música Ligera',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -153,7 +153,7 @@ VALUES
     'SONG',
     'Persiana Americana',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -161,7 +161,7 @@ VALUES
     'SONG',
     'Corazón Delator',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -169,7 +169,7 @@ VALUES
     'ALBUM',
     'Canción Animal',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 ),
 (
@@ -177,7 +177,7 @@ VALUES
     'ALBUM',
     'Signos',
     'Soda Stereo',
-    NULL
+    NULL,
     CURRENT_TIMESTAMP
 )
 

@@ -202,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            // ForgotPasswordScreen va aquí
+                            Navigator.pushNamed(context, AppRoutes.forgotPassword);
                           },
                           child: Text(
                             '¿Olvidaste tu contraseña?',

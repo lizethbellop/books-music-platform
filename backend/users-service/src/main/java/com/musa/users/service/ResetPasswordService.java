@@ -1,6 +1,7 @@
 package com.musa.users.service;
 
 import com.musa.users.dto.request.ResetPasswordRequestDto;
+import com.musa.users.dto.request.VerifyTokenRequestDto;
 import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.exception.InvalidTokenException;
 import com.musa.users.exception.PasswordMismatchException;
@@ -23,5 +24,7 @@ public interface ResetPasswordService {
      * @throws WeakPasswordException     Si la nueva contraseña no cumple los requisitos mínimos.
      * @throws SamePasswordException     Si la nueva contraseña es igual a la actual.
      */
+    MessageResponseDto verifyToken(VerifyTokenRequestDto request);
+
     MessageResponseDto resetPassword(ResetPasswordRequestDto request);
 }

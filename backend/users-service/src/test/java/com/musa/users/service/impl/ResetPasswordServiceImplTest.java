@@ -151,4 +151,27 @@ class ResetPasswordServiceImplTest {
                 passwordEncoder
         );
     }
+
+    @Test
+    void verifyToken_acceptsValidCodeWithoutConsumingIt() {
+        when(passwordResetRepository.findByTokenHash("code")).thenReturn(Optional.of(resetEntity));
+        assertEquals("Token válido.", resetPasswordService.verifyToken(
+                new com.musa.users.dto.request.VerifyTokenRequestDto("code")).message());
+        verify(passwordResetRepository, never()).delete(any());
+    }
+
+    @Test
+    void verifyToken_rejectsUnknownCode() {
+        when(passwordResetRepository.findByTokenHash("missing")).thenReturn(Optional.empty());
+        assertThrows(InvalidTokenException.class, () -> resetPasswordService.verifyToken(
+                new com.musa.users.dto.request.VerifyTokenRequestDto("missing")));
+    }
+
+    @Test
+    void verifyToken_rejectsExpiredCode() {
+        resetEntity.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+        when(passwordResetRepository.findByTokenHash("code")).thenReturn(Optional.of(resetEntity));
+        assertThrows(TokenExpiredException.class, () -> resetPasswordService.verifyToken(
+                new com.musa.users.dto.request.VerifyTokenRequestDto("code")));
+    }
 }

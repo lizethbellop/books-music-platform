@@ -26,7 +26,7 @@ Escribe CLAVE=valor, sin comillas ni espacios alrededor de =. Sustituye todos lo
 
 **JWT_SECRET:** es una clave privada con la que Usuarios firma los tokens y los otros servicios los verifican. No es el token que recibes al iniciar sesión, ni una API key de Spotify. En una instalación nueva genera una clave y copia el mismo valor en los cuatro .env. Cada integrante puede tener una clave distinta en su computadora. No regenerarla en cada arranque: cambiarla invalida los tokens existentes y exige volver a iniciar sesión.
 
-El script setup-local-env.py genera una clave cuando crea el .env de Usuarios; conserva archivos existentes y **no la copia automáticamente a los otros servicios**. Por eso hay que comprobar que los cuatro tengan el mismo JWT_SECRET. El repositorio actual publica las plantillas con la clave vacía, no tu clave privada.
+El script setup-local-env.py reutiliza la clave local existente o genera una nueva y la coloca en los .env nuevos o con JWT_SECRET vacío. Conserva las demás credenciales. Si detecta claves distintas entre servicios, se detiene sin modificar archivos para que puedas unificarlas. El repositorio actual publica las plantillas con la clave vacía, no tu clave privada.
 
 ### Usuarios — backend/users-service/.env
 

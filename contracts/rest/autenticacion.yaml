@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Contrato objetivo acordado para autenticación y sesión. Incluye mejoras que deben
     implementarse y verificarse antes de considerar conforme el backend.
-  x-implementation-status: pendiente de implementar cambios de sesión y recuperación
+  x-implementation-status: sesión y recuperación implementadas en backend y frontend
 servers:
 - url: http://localhost:8083
 paths:
@@ -209,7 +209,7 @@ paths:
     post:
       summary: Solicitar recuperación de contraseña
       operationId: forgotPassword
-      description: Si la cuenta existe, envía por correo un enlace de recuperación. La respuesta
+      description: Si la cuenta existe, envía por correo un código de recuperación. La respuesta
         normal usa el mismo código y mensaje para cuentas existentes e inexistentes. No entrega el
         token en la API. El token de recuperación vence en 5 minutos y es de un solo uso.
       security: []
@@ -247,6 +247,47 @@ paths:
                 email: Formato de correo inválido
         '500':
           description: Falló el envío del correo de recuperación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/v1/auth/verify-token:
+    post:
+      summary: Verificar el código de recuperación de contraseña
+      operationId: verifyToken
+      description: >
+        Comprueba el código enviado por correo antes de mostrar el formulario
+        de nueva contraseña. No es un JWT ni un refresh token. No consume el
+        código ni extiende su vencimiento de 5 minutos. reset-password vuelve
+        a validarlo y lo consume cuando cambia la contraseña.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+                  description: Código de recuperación recibido por correo.
+      responses:
+        '200':
+          description: Código válido y vigente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Falta el código o está vacío.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+        '401':
+          description: Código inválido, vencido o utilizado previamente.
           content:
             application/json:
               schema:

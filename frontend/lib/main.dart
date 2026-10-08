@@ -7,6 +7,9 @@ import 'features/auth/data/services/auth_api_service.dart';
 import 'features/auth/data/services/auth_session_manager.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/auth/presentation/screens/forgot_password_screen.dart';
+import 'features/auth/presentation/screens/verify_token_screen.dart';
+import 'features/auth/presentation/screens/reset_password_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,24 +30,23 @@ Future<void> main() async {
 
     runApp(const MusaApp());
   } catch (_) {
-    runApp(MaterialApp(
-      theme: AppTheme.light,
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('No se pudo recuperar la sesión.'),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: main,
-                child: const Text('Reintentar'),
-              ),
-            ],
+    runApp(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('No se pudo recuperar la sesión.'),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: main, child: const Text('Reintentar')),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -96,10 +98,7 @@ class _MusaAppState extends State<MusaApp> {
       return const LoginScreen();
     }
 
-    return AppShell(
-      userId: session.userId,
-      initialSection: section,
-    );
+    return AppShell(userId: session.userId, initialSection: section);
   }
 
   @override
@@ -109,12 +108,13 @@ class _MusaAppState extends State<MusaApp> {
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light,
     themeMode: ThemeMode.light,
-    initialRoute: _manager.session == null
-        ? AppRoutes.login
-        : AppRoutes.home,
+    initialRoute: _manager.session == null ? AppRoutes.login : AppRoutes.home,
     routes: {
       AppRoutes.login: (_) => const LoginScreen(),
       AppRoutes.register: (_) => const RegisterScreen(),
+      AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
+      AppRoutes.verifyToken: (_) => const VerifyTokenScreen(),
+      AppRoutes.resetPassword: (_) => const ResetPasswordScreen(),
       AppRoutes.home: (_) => _authenticatedPage(AppSection.home),
       AppRoutes.music: (_) => _authenticatedPage(AppSection.music),
       AppRoutes.books: (_) => _authenticatedPage(AppSection.books),

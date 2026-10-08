@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import io.jsonwebtoken.JwtException;
+import org.springframework.security.core.AuthenticationException;
 
 /**
  * Filtro de seguridad que intercepta cada petición HTTP entrante para validar
@@ -50,28 +52,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        //extraer el token (quitando los primeros 7 caracteres de "Bearer ")
-        jwtToken = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwtToken);
+        try {
+            jwtToken = authHeader.substring(7);
+            userEmail = jwtService.extractUsername(jwtToken);
 
-        //Si el token tiene correo y el usuario aún no está autenticado en el contexto actual
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-
-            //Verificar firma y validez temporal del token
-            if (jwtService.isTokenValid(jwtToken, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);//registrar al usuario en el contexto de seguridad para la petición actual
+            if (userEmail == null) {
+                rejectToken(response);
+                return;
             }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()
+                        || !userDetails.isAccountNonExpired() || !userDetails.isCredentialsNonExpired()
+                        || !jwtService.isTokenValid(jwtToken, userDetails)) {
+                    rejectToken(response);
+                    return;
+                }
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        } catch (JwtException | AuthenticationException | IllegalArgumentException exception) {
+            rejectToken(response);
+            return;
         }
 
         //permitir que la petición continúe su flujo
         filterChain.doFilter(request, response);
+    }
+    private void rejectToken(HttpServletResponse response) throws IOException {
+        SecurityContextHolder.clearContext();
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"message\":\"Token inválido o expirado. Inicia sesión nuevamente.\"}");
     }
 }

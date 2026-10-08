@@ -73,36 +73,6 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
 
             return Scaffold(
               backgroundColor: AppColors.cream,
-              appBar: isDesktop
-                  ? null
-                  : AppBar(
-                      backgroundColor: AppColors.warmWhite,
-                      title: const Text('musa.'),
-                    ),
-              drawer: isDesktop
-                  ? null
-                  : Drawer(
-                      backgroundColor: AppColors.warmWhite,
-                      child: SafeArea(
-                        child: MusaSidebar(
-                          profilePictureUrl: profilePictureUrl,
-                          selectedSection:
-                              widget.selectedSection ??
-                              _toAppSection(widget.selectedDestination),
-                          onSectionSelected: (section) {
-                            Navigator.of(context).pop();
-                            if (widget.onSectionSelected != null) {
-                              widget.onSectionSelected!(section);
-                            } else {
-                              final destination = _toMusaDestination(section);
-                              if (destination != null) {
-                                widget.onDestinationSelected(destination);
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    ),
               body: isDesktop
                   ? Row(
                       children: [
@@ -125,7 +95,7 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
                         Expanded(child: widget.child),
                       ],
                     )
-                  : widget.child,
+                  : SafeArea(bottom: false, child: widget.child),
               bottomNavigationBar: isDesktop
                   ? null
                   : MusaBottomNavigation(

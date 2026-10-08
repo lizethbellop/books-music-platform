@@ -49,32 +49,34 @@ void main() {
     }
   });
 
-  testWidgets('Mobile uses bottom navigation and a light menu', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MaterialApp(home: AppShell()));
-    await tester.pump();
-    expect(find.byType(MusaBottomNavigation), findsOneWidget);
-    expect(find.byType(MusaSidebar), findsNothing);
-    for (final name in ['Música', 'Libros', 'Perfil', 'Inicio']) {
-      await tester.tap(
-        find.descendant(
-          of: find.byType(MusaBottomNavigation),
-          matching: find.text(name),
-        ),
-      );
+  testWidgets(
+    'Mobile uses only bottom navigation without a top bar or drawer',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const MaterialApp(home: AppShell()));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(tester.takeException(), isNull, reason: name);
-    }
-    await tester.tap(find.byTooltip('Open navigation menu'));
-    await tester.pumpAndSettle();
-    expect(find.byType(MusaSidebar), findsOneWidget);
-    await tester.tap(find.text('Social'));
-    await tester.pumpAndSettle();
-    expect(find.text('Social — pendiente'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byType(MusaBottomNavigation), findsOneWidget);
+      expect(find.byType(MusaSidebar), findsNothing);
+      for (final name in ['Explorar', 'Música', 'Libros', 'Perfil', 'Inicio']) {
+        await tester.tap(
+          find.descendant(
+            of: find.byType(MusaBottomNavigation),
+            matching: find.text(name),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull, reason: name);
+      }
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byType(Drawer), findsNothing);
+      expect(find.byIcon(Icons.menu), findsNothing);
+      expect(find.byType(MusaSidebar), findsNothing);
+      expect(find.byType(MusaBottomNavigation), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

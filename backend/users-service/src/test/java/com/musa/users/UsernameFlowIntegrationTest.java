@@ -97,4 +97,38 @@ class UsernameFlowIntegrationTest {
             for (String token : refreshTokens) sessions.revoke(token);
         }
     }
+
+    @Test void recoversPasswordThroughEmailCodeAndRejectsReusedCode() throws Exception {
+        String username = "reset_" + UUID.randomUUID().toString().replace("-", "");
+        String address = username + "@example.com";
+        mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("fullName", "Recuperación temporal",
+                                "username", username, "email", address, "password", "Password123!",
+                                "confirmPassword", "Password123!", "roleName", "USUARIO"))))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/auth/forgot-password").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("email", address))))
+                .andExpect(status().isOk());
+        var code = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(email).sendPasswordResetEmail(org.mockito.ArgumentMatchers.eq(address), code.capture());
+        String token = code.getValue();
+        String verifyBody = json.writeValueAsString(java.util.Map.of("token", token));
+        mvc.perform(post("/api/v1/auth/verify-token").contentType(MediaType.APPLICATION_JSON).content(verifyBody))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("token", token,
+                                "newPassword", "ChangedPassword123!", "confirmNewPassword", "ChangedPassword123!"))))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/auth/verify-token").contentType(MediaType.APPLICATION_JSON).content(verifyBody))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("email", address, "password", "Password123!"))))
+                .andExpect(status().isUnauthorized());
+        var login = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("email", address,
+                                "password", "ChangedPassword123!", "rememberMe", false))))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        String refresh = json.readTree(login.getContentAsString()).get("refreshToken").asString();
+        sessions.revoke(refresh);
+    }
 }

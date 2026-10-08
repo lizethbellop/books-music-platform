@@ -9,6 +9,7 @@ import '../models/message_response_model.dart';
 import '../models/register_request_model.dart';
 import '../models/reset_password_request_model.dart';
 import '../models/token_request_model.dart';
+import '../models/verify_token_request_model.dart';
 
 class AuthApiException implements Exception {
   final String message;
@@ -38,16 +39,47 @@ class AuthApiService {
     'Accept': 'application/json',
   };
 
+  Map<String, dynamic> _readResponse(http.Response response) {
+    Map<String, dynamic>? data;
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      // Empty or HTML error bodies must keep their real HTTP status.
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = data?['message'];
+      final validationMessages = data?.values.whereType<String>().join(' ');
+      throw AuthApiException(
+        message is String && message.isNotEmpty
+            ? message
+            : validationMessages != null && validationMessages.isNotEmpty
+            ? validationMessages
+            : 'El servidor rechazó la solicitud (${response.statusCode}).',
+        statusCode: response.statusCode,
+      );
+    }
+    if (data == null) {
+      throw AuthApiException(
+        'El servidor devolvió una respuesta inválida.',
+        statusCode: response.statusCode,
+      );
+    }
+    return data;
+  }
+
   /// Endpoint: POST /api/v1/auth/login
   Future<AuthResponseModel> login(LoginRequestModel request) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/login'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/login'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _readResponse(response);
 
       if (response.statusCode == 200) {
         return AuthResponseModel.fromJson(data);
@@ -66,13 +98,15 @@ class AuthApiService {
   /// Endpoint: POST /api/v1/auth/register
   Future<MessageResponseModel> register(RegisterRequestModel request) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/register'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/register'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _readResponse(response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return MessageResponseModel.fromJson(data);
@@ -93,13 +127,15 @@ class AuthApiService {
     ForgotPasswordRequestModel request,
   ) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/forgot-password'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/forgot-password'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _readResponse(response);
 
       if (response.statusCode == 200) {
         return MessageResponseModel.fromJson(data);
@@ -117,18 +153,41 @@ class AuthApiService {
     }
   }
 
+  /// Checks the recovery code from email; this is not an access/refresh token.
+  Future<MessageResponseModel> verifyToken(
+    VerifyTokenRequestModel request,
+  ) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/verify-token'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
+      return MessageResponseModel.fromJson(_readResponse(response));
+    } catch (e) {
+      if (e is AuthApiException) rethrow;
+      throw AuthApiException(
+        'No se pudo verificar el código. Comprueba tu conexión.',
+      );
+    }
+  }
+
   /// Endpoint: POST /api/v1/auth/reset-password
   Future<MessageResponseModel> resetPassword(
     ResetPasswordRequestModel request,
   ) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/reset-password'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/reset-password'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _readResponse(response);
 
       if (response.statusCode == 200) {
         return MessageResponseModel.fromJson(data);
@@ -148,13 +207,15 @@ class AuthApiService {
   /// Endpoint: POST /api/v1/auth/refresh-token
   Future<AuthResponseModel> refreshToken(TokenRequestModel request) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/refresh-token'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/refresh-token'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _readResponse(response);
 
       if (response.statusCode == 200) {
         return AuthResponseModel.fromJson(data);
@@ -172,27 +233,27 @@ class AuthApiService {
 
   Future<void> logout(TokenRequestModel request) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/logout'),
-        headers: _headers,
-        body: jsonEncode(request.toJson()),
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/logout'),
+            headers: _headers,
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return;
+      }
+
+      final data = _readResponse(response);
+
+      throw AuthApiException(
+        data['message'] as String? ?? 'No se pudo cerrar la sesión',
+        statusCode: response.statusCode,
       );
-
-    if (response.statusCode == 200) {
-      return;
-    }
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-
-    throw AuthApiException(
-      data['message'] as String? ?? 'No se pudo cerrar la sesión',
-      statusCode: response.statusCode,
-    );
     } catch (e) {
       if (e is AuthApiException) rethrow;
-      throw AuthApiException(
-        'No se pudo conectar para cerrar la sesión.',
-      );
+      throw AuthApiException('No se pudo conectar para cerrar la sesión.');
     }
   }
 }

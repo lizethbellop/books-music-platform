@@ -1,6 +1,7 @@
 package com.musa.users.controller;
 
 import com.musa.users.dto.request.ResetPasswordRequestDto;
+import com.musa.users.dto.request.VerifyTokenRequestDto;
 import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.service.ResetPasswordService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,11 @@ public class ResetPasswordController {
 
     public ResetPasswordController(ResetPasswordService resetPasswordService) {
         this.resetPasswordService = resetPasswordService;
+    }
+
+    @PostMapping("/verify-token")
+    public ResponseEntity<MessageResponseDto> verifyToken(@Valid @RequestBody VerifyTokenRequestDto request) {
+        return ResponseEntity.ok(resetPasswordService.verifyToken(request));
     }
 
     @Operation(summary = "Restablecer contraseña", description = "Valida el token de recuperación y actualiza la contraseña del usuario.")

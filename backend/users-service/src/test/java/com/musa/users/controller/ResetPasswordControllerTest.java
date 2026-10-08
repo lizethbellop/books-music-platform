@@ -59,4 +59,21 @@ class ResetPasswordControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("Contraseña restablecida exitosamente."));
     }
+
+    @Test
+    @WithMockUser
+    void verifyToken_returnsSuccessfulMessage() throws Exception {
+        when(resetPasswordService.verifyToken(any())).thenReturn(new MessageResponseDto("Token válido."));
+        mockMvc.perform(post("/api/v1/auth/verify-token").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"code\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.message").value("Token válido."));
+    }
+
+    @Test
+    @WithMockUser
+    void verifyToken_rejectsBlankCode() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/verify-token").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }
