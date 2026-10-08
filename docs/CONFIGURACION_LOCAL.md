@@ -1,8 +1,10 @@
+Para el recorrido paso a paso: [Windows](GUIA_WINDOWS.md), [Mac](GUIA_MAC.md) y [campos de .env / pruebas manuales](GUIA_LOCAL.md).
+
 # Configuración local y secretos
 
 Desde la raíz, ejecutar `python3 scripts/setup-local-env.py` (Windows: `py scripts/setup-local-env.py`). Crea un `.env` ignorado por Git en cada servicio; conserva los archivos existentes y genera una clave JWT Base64 aleatoria para autenticación. Completar las contraseñas y credenciales de cada integrante. Se suben los `.env.example`, nunca los `.env`.
 
-Los archivos `.env` usan formato Java properties: `NOMBRE=valor`, sin `export`, `$env:` ni comillas alrededor del valor. No pegar contraseñas en el código ni en Flutter. Las variables de entorno tienen prioridad sobre estos archivos. Para JWT usar una clave Base64 de al menos 32 bytes; el script genera 64 bytes. La clave local debe permanecer estable entre reinicios para conservar la validez de los tokens existentes.
+Los archivos `.env` usan formato Java properties: `NOMBRE=valor`, sin `export`, `$env:` ni comillas alrededor del valor. No pegar contraseñas en el código ni en Flutter. Las variables de entorno tienen prioridad sobre estos archivos. Para JWT usar una clave Base64 de al menos 64 bytes; el script genera 64 bytes. La clave local debe permanecer estable entre reinicios para conservar la validez de los tokens existentes.
 
 Iniciar cada backend **desde su propia carpeta**, con `bash mvnw spring-boot:run` en macOS/Linux o `.\mvnw.cmd spring-boot:run` en PowerShell. Spring carga automáticamente el `.env` de esa carpeta. PostgreSQL y las bases independientes deben estar disponibles; autenticación también usa Redis. Se conserva la preparación del esquema de perfil documentada en el servicio.
 

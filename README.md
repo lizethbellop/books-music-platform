@@ -2,7 +2,7 @@
 
 Para preparar los archivos locales de secretos y revisar la corrección de navegación, consultar [Configuración local](docs/CONFIGURACION_LOCAL.md). Autenticación usa 8083; música conserva 8080.
 
-Para Windows, seguir [Guía de instalación y ejecución](docs/GUIA_WINDOWS.md). El [inventario de pruebas](docs/CONTEO_PRUEBAS.md) distingue unitarias, pruebas Spring e integración.
+Para preparar y ejecutar en local, seguir la guía de [Windows](docs/GUIA_WINDOWS.md) o [Mac](docs/GUIA_MAC.md). Los [valores de configuración y recorrido manual](docs/GUIA_LOCAL.md) se explican paso a paso. El [inventario de pruebas](docs/CONTEO_PRUEBAS.md) distingue unitarias, pruebas Spring e integración.
 
 ## Puertos locales del equipo
 
