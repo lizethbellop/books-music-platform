@@ -3,7 +3,6 @@ package com.musa.profile.controller;
 import com.musa.profile.dto.ProfileResponse;
 import com.musa.profile.service.ProfileService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.musa.profile.dto.UpdateProfileRequest;
@@ -15,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import com.musa.profile.service.ProfilePhotoService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.UUID;
 
@@ -31,26 +32,41 @@ public class ProfileController {
 
     @PostMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProfileResponse uploadOwnPhoto(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestPart("file") MultipartFile file
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return ProfileResponse.from(profilePhotoService.upload(userId, file));
+    }
+
+    @PostMapping("/me")
+    public ProfileResponse ensureOwnProfile(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return ProfileResponse.from(
+                profileService.ensureOwnProfile(userId)
+        );
     }
 
     @GetMapping("/me")
     public ProfileResponse getOwnProfile(
-            @RequestHeader("X-User-Id") UUID userId
-    ){
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
         return ProfileResponse.from(
-              profileService.getByUserId(userId)
+                profileService.getByUserId(userId)
         );
     }
 
     @PutMapping("/me")
     public ProfileResponse updateOwnProfile(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateProfileRequest request
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         return ProfileResponse.from(
                 profileService.updateProfile(
                         userId,

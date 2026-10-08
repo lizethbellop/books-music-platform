@@ -16,7 +16,6 @@ import '../../data/services/auth_api_service.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_text_field.dart';
 
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -27,10 +26,12 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   final AuthApiService _authApiService = AuthApiService();
 
@@ -41,6 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -55,6 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final request = RegisterRequestModel(
+        username: _usernameController.text.trim().toLowerCase(),
         fullName: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -73,7 +76,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       AppNotification.showError(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      AppNotification.showError(context, 'No se pudo conectar con el servidor.');
+      AppNotification.showError(
+        context,
+        'No se pudo conectar con el servidor.',
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -109,7 +115,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: AppSpacing.sm),
 
                     // Título y Subtítulo
-                    Text('Registrarse', style: AppTextStyles.pageTitle.copyWith(fontSize: 28)),
+                    Text(
+                      'Registrarse',
+                      style: AppTextStyles.pageTitle.copyWith(fontSize: 28),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       'Crea tu cuenta y sé parte de Musa.',
@@ -132,6 +141,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
+                    _buildLabel('Nombre de usuario *'),
+                    AuthTextField(
+                      controller: _usernameController,
+                      hintText: 'Ejemplo: liz_bello',
+                      prefixIcon: Icons.alternate_email,
+                      validator: (value) {
+                        if (value == null ||
+                            !RegExp(r'^[A-Za-z0-9_]{3,40}$')
+                                .hasMatch(value.trim())) {
+                          return 'Usa de 3 a 40 letras, números o guiones bajos';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
                     // Correo electrónico
                     _buildLabel('Correo electrónico *'),
                     AuthTextField(
@@ -143,7 +168,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'El correo es obligatorio';
                         }
-                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
                         if (!emailRegex.hasMatch(value.trim())) {
                           return 'Ingresa un correo válido';
                         }
@@ -161,11 +188,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: _obscurePassword,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                           color: AppColors.textSecondary,
                           size: 20,
                         ),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -188,11 +219,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: _obscureConfirmPassword,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscureConfirmPassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                           color: AppColors.textSecondary,
                           size: 20,
                         ),
-                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        onPressed: () => setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -211,8 +247,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: _selectedRole,
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textSecondary, size: 20),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        prefixIcon: const Icon(
+                          Icons.badge_outlined,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.small),
                           borderSide: const BorderSide(color: AppColors.border),
@@ -223,7 +266,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.small),
-                          borderSide: const BorderSide(color: AppColors.lavender, width: 1.5),
+                          borderSide: const BorderSide(
+                            color: AppColors.lavender,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                       items: const [
@@ -253,16 +299,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: AppSpacing.lg),
 
                     // Footer login link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text('¿Ya tienes una cuenta? ', style: AppTextStyles.secondary),
+                        Text(
+                          '¿Ya tienes una cuenta? ',
+                          style: AppTextStyles.secondary,
+                        ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushReplacementNamed(context, AppRoutes.login);
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.login,
+                            );
                           },
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),

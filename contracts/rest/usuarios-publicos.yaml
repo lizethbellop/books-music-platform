@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: Usernames públicos de Musa
+  version: 0.1.0
+  description: Consulta mínima de autores de reseñas. No devuelve correos, roles ni datos privados.
+servers:
+  - url: http://localhost:8083
+security:
+  - BearerAuth: []
+paths:
+  /api/v1/users/usernames:
+    get:
+      operationId: getPublicUsernames
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Mapa de UUID a username de cuentas activas; omite cuentas inexistentes.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '400':
+          description: UUID o tamaño de lote inválido.
+        '401':
+          description: Sesión inválida.
+        '403':
+          description: Acceso denegado sin sesión válida.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

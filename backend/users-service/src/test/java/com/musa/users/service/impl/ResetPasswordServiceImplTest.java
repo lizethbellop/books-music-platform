@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.musa.users.exception.PasswordMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -125,5 +126,29 @@ class ResetPasswordServiceImplTest {
         // Verify: Confirma la persistencia del usuario actualizado y el borrado del token consumido
         verify(userRepository).save(user);
         verify(passwordResetRepository).delete(resetEntity);
+    }
+
+    @Test
+    @DisplayName("Debe rechazar contraseñas que no coinciden sin modificar datos")
+    void resetPassword_debeLanzarExcepcion_siPasswordsNoCoinciden() {
+
+        ResetPasswordRequestDto request = new ResetPasswordRequestDto(
+                "token-valido-xyz",
+                "NuevaPassword123!",
+                "OtraPassword123!"
+        );
+
+
+        assertThrows(
+                PasswordMismatchException.class,
+                () -> resetPasswordService.resetPassword(request)
+        );
+
+
+        verifyNoInteractions(
+                passwordResetRepository,
+                userRepository,
+                passwordEncoder
+        );
     }
 }

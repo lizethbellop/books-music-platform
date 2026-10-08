@@ -1,5 +1,7 @@
 package com.musa.music.dto;
 
+import java.util.UUID;
+
 import com.musa.music.entity.MusicContentType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 public record MusicRatingRequest(
 
         @NotNull
-        Long userId,
+        UUID userId,
 
         @NotBlank
         String spotifyId,

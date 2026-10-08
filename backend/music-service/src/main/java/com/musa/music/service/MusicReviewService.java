@@ -1,5 +1,10 @@
 package com.musa.music.service;
 
+import java.util.UUID;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
 import com.musa.music.dto.MusicReviewRequest;
 import com.musa.music.dto.MusicReviewUpdateRequest;
 import com.musa.music.entity.MusicContent;
@@ -57,27 +62,31 @@ public class MusicReviewService {
 
     public MusicReview updateReview(
             Long reviewId,
+            UUID userId,
             MusicReviewUpdateRequest request
     ) {
 
-        MusicReview review = musicReviewRepository
-                .findById(reviewId)
-                .orElseThrow(
-                        () -> new RuntimeException("Reseña no encontrada")
-                );
+        MusicReview review = requireOwnedReview(reviewId, userId);
 
         review.setReviewText(request.reviewText());
 
         return musicReviewRepository.save(review);
     }
 
-    public void deleteReview(Long reviewId) {
+    public void deleteReview(Long reviewId, UUID userId) {
+        MusicReview review = requireOwnedReview(reviewId, userId);
+        musicReviewRepository.delete(review);
+    }
 
-        if (!musicReviewRepository.existsById(reviewId)) {
-            throw new RuntimeException("Reseña no encontrada");
+    private MusicReview requireOwnedReview(Long reviewId, UUID userId) {
+        MusicReview review = musicReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Reseña no encontrada"
+                ));
+        if (!userId.equals(review.getUserId())) {
+            throw new AccessDeniedException("Solo puedes modificar tus propias reseñas.");
         }
-
-        musicReviewRepository.deleteById(reviewId);
+        return review;
     }
 
     public List<MusicReview> getReviewsByMusicContentId(
@@ -88,7 +97,7 @@ public class MusicReviewService {
     }
 
     public MusicReview getUserReview(
-            Long userId,
+            UUID userId,
             Long musicContentId
     ) {
         return musicReviewRepository
@@ -100,7 +109,7 @@ public class MusicReviewService {
     }
 
     public MusicReview getUserReviewBySpotify(
-            Long userId,
+            UUID userId,
             String spotifyId,
             MusicContentType contentType
     ) {
@@ -143,7 +152,7 @@ public class MusicReviewService {
      }
 
      public List<ReviewedMusicResponse> getReviewedMusicByUser(
-                Long userId
+                UUID userId
      ) {
         return musicReviewRepository
                 .findByUserIdOrderByCreatedAtDesc(userId)

@@ -1,6 +1,10 @@
 import 'dart:convert';
 
+import '../../../../core/network/review_usernames.dart';
+
 import 'package:http/http.dart' as http;
+
+import '../../../../core/network/authenticated_api_client.dart';
 
 import '../models/book_detail.dart';
 import '../models/book_search_item.dart';
@@ -9,17 +13,25 @@ import '../models/user_book.dart';
 import '../models/favorite_book.dart';
 
 class BooksApiService {
+  final http.Client _client;
+
+  BooksApiService({
+    http.Client? client,
+    Future<String> Function()? getAccessToken,
+  }) : _client = AuthenticatedApiClient(
+         client: client,
+         getAccessToken: getAccessToken,
+       );
+
   static const String baseUrl = String.fromEnvironment(
     'BOOKS_API_URL',
     defaultValue: 'http://localhost:8081/books',
   );
 
   Future<List<BookSearchItem>> searchBooks(String query) async {
-    final uri = Uri.parse(
-      '$baseUrl/search?q=${Uri.encodeComponent(query)}',
-    );
+    final uri = Uri.parse('$baseUrl/search?q=${Uri.encodeComponent(query)}');
 
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
       throw Exception('No se pudo buscar libros');
@@ -28,11 +40,7 @@ class BooksApiService {
     final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map(
-          (item) => BookSearchItem.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
+        .map((item) => BookSearchItem.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
@@ -40,50 +48,35 @@ class BooksApiService {
     required String externalId,
     required String userId,
   }) async {
-    final uri = Uri.parse(
-      '$baseUrl/$externalId/favorites?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/$externalId/favorites?userId=$userId');
 
-    final response = await http.delete(uri);
+    final response = await _client.delete(uri);
 
     if (response.statusCode != 204) {
-      throw Exception(
-        'No se pudo quitar el libro de favoritos',
-      );
+      throw Exception('No se pudo quitar el libro de favoritos');
     }
   }
 
   Future<List<BookSearchItem>> getExploreBooks() async {
-    final uri = Uri.parse(
-      '$baseUrl/explore',
-    );
+    final uri = Uri.parse('$baseUrl/explore');
 
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
-      throw Exception(
-        'No se pudo cargar el catálogo',
-      );
+      throw Exception('No se pudo cargar el catálogo');
     }
 
-    final List<dynamic> data =
-        jsonDecode(response.body);
+    final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map(
-          (item) => BookSearchItem.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
+        .map((item) => BookSearchItem.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
   Future<List<UserBook>> getLibrary(String userId) async {
-    final uri = Uri.parse(
-      '$baseUrl/library?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/library?userId=$userId');
 
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
       throw Exception('No se pudo consultar la biblioteca');
@@ -92,20 +85,14 @@ class BooksApiService {
     final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map(
-          (item) => UserBook.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
+        .map((item) => UserBook.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
   Future<List<FavoriteBook>> getFavorites(String userId) async {
-    final uri = Uri.parse(
-      '$baseUrl/favorites?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/favorites?userId=$userId');
 
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
       throw Exception('No se pudieron consultar los favoritos');
@@ -114,128 +101,94 @@ class BooksApiService {
     final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map(
-          (item) => FavoriteBook.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
+        .map((item) => FavoriteBook.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
   Future<List<Review>> getReviews(String externalId) async {
-  final uri = Uri.parse(
-    '$baseUrl/$externalId/reviews',
-  );
+    final uri = Uri.parse('$baseUrl/$externalId/reviews');
 
-  final response = await http.get(uri);
+    final response = await _client.get(uri);
 
-  if (response.statusCode != 200) {
-    throw Exception('No se pudieron consultar las reseñas');
+    if (response.statusCode != 200) {
+      throw Exception('No se pudieron consultar las reseñas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    final resolved = await resolveReviewUsernames(
+      data.map((item) => item as Map<String, dynamic>).toList(),
+      _client,
+    );
+    return resolved.map(Review.fromJson).toList();
   }
 
-  final List<dynamic> data = jsonDecode(response.body);
+  Future<Review> createReview({
+    required String externalId,
+    required String userId,
+    required double rating,
+    String? reviewText,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$externalId/reviews?userId=$userId');
 
-  return data
-      .map(
-        (item) => Review.fromJson(
-          item as Map<String, dynamic>,
-        ),
-      )
-      .toList();
-}
+    final response = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'rating': rating, 'reviewText': reviewText}),
+    );
 
-Future<Review> createReview({
-  required String externalId,
-  required String userId,
-  required double rating,
-  String? reviewText,
-}) async {
-  final uri = Uri.parse(
-    '$baseUrl/$externalId/reviews?userId=$userId',
-  );
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo crear la reseña');
+    }
 
-  final response = await http.post(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({
-      'rating': rating,
-      'reviewText': reviewText,
-    }),
-  );
-
-  if (response.statusCode != 200) {
-    throw Exception('No se pudo crear la reseña');
+    return Review.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
-  return Review.fromJson(
-    jsonDecode(response.body) as Map<String, dynamic>,
-  );
-}
+  Future<Review> updateReview({
+    required String externalId,
+    required String userId,
+    required double rating,
+    String? reviewText,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$externalId/reviews?userId=$userId');
 
-Future<Review> updateReview({
-  required String externalId,
-  required String userId,
-  required double rating,
-  String? reviewText,
-}) async {
-  final uri = Uri.parse(
-    '$baseUrl/$externalId/reviews?userId=$userId',
-  );
+    final response = await _client.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'rating': rating, 'reviewText': reviewText}),
+    );
 
-  final response = await http.put(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({
-      'rating': rating,
-      'reviewText': reviewText,
-    }),
-  );
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo actualizar la reseña');
+    }
 
-  if (response.statusCode != 200) {
-    throw Exception('No se pudo actualizar la reseña');
+    return Review.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
-  return Review.fromJson(
-    jsonDecode(response.body) as Map<String, dynamic>,
-  );
-}
+  Future<void> deleteReview({
+    required String externalId,
+    required String userId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$externalId/reviews?userId=$userId');
 
-Future<void> deleteReview({
-  required String externalId,
-  required String userId,
-}) async {
-  final uri = Uri.parse(
-    '$baseUrl/$externalId/reviews?userId=$userId',
-  );
+    final response = await _client.delete(uri);
 
-  final response = await http.delete(uri);
-
-  if (response.statusCode != 204) {
-    throw Exception('No se pudo eliminar la reseña');
+    if (response.statusCode != 204) {
+      throw Exception('No se pudo eliminar la reseña');
+    }
   }
-}
 
   Future<void> rateBook({
     required String externalId,
     required String userId,
     required double rating,
   }) async {
-    final uri = Uri.parse(
-      '$baseUrl/$externalId/rating?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/$externalId/rating?userId=$userId');
 
-    final response = await http.put(
+    final response = await _client.put(
       uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'rating': rating,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'rating': rating}),
     );
 
     if (response.statusCode != 200) {
@@ -244,11 +197,9 @@ Future<void> deleteReview({
   }
 
   Future<BookDetail> getBookDetail(String externalId) async {
-    final uri = Uri.parse(
-      '$baseUrl/$externalId',
-    );
+    final uri = Uri.parse('$baseUrl/$externalId');
 
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
       throw Exception('No se pudo consultar el libro');
@@ -264,18 +215,12 @@ Future<void> deleteReview({
     required String userId,
     required String status,
   }) async {
-    final uri = Uri.parse(
-      '$baseUrl/$externalId/reading-status?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/$externalId/reading-status?userId=$userId');
 
-    final response = await http.put(
+    final response = await _client.put(
       uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'status': status,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'status': status}),
     );
 
     if (response.statusCode != 200) {
@@ -287,11 +232,9 @@ Future<void> deleteReview({
     required String externalId,
     required String userId,
   }) async {
-    final uri = Uri.parse(
-      '$baseUrl/$externalId/favorites?userId=$userId',
-    );
+    final uri = Uri.parse('$baseUrl/$externalId/favorites?userId=$userId');
 
-    final response = await http.post(uri);
+    final response = await _client.post(uri);
 
     if (response.statusCode == 200) {
       return;
@@ -303,8 +246,4 @@ Future<void> deleteReview({
 
     throw Exception('No se pudo agregar el libro a favoritos');
   }
-
-
-
 }
-

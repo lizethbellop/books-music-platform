@@ -5,7 +5,6 @@ import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.entity.PasswordReset;
 import com.musa.users.entity.User;
 import com.musa.users.exception.EmailSendException;
-import com.musa.users.exception.ResourceNotFoundException;
 import com.musa.users.repository.PasswordResetRepository;
 import com.musa.users.repository.UserRepository;
 import com.musa.users.service.EmailService;
@@ -55,15 +54,24 @@ class ForgotPasswordServiceImplTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar ResourceNotFoundException si el email no pertenece a ningún usuario")
-    void sendResetPasswordEmail_debeLanzarExcepcion_siUsuarioNoExiste() {
-        // Arrange: Simula que la búsqueda en BD devuelve vacío
-        when(userRepository.findByEmail("ana@usi.com")).thenReturn(Optional.empty());
+    @DisplayName("Debe devolver un mensaje genérico si el usuario no existe")
+    void sendResetPasswordEmail_debeDevolverMensajeGenerico_siUsuarioNoExiste() {
 
-        // Act & Assert: Verifica la excepción esperada
-        assertThrows(ResourceNotFoundException.class, () -> forgotPasswordService.sendResetPasswordEmail(requestDto));
+        when(userRepository.findByEmail("ana@usi.com"))
+                .thenReturn(Optional.empty());
 
-        // Verify: Garantiza que no se guardó entidad ni se envió ningún correo
+
+        MessageResponseDto response =
+                forgotPasswordService.sendResetPasswordEmail(requestDto);
+
+
+        assertEquals(
+                "Si existe una cuenta con ese correo, recibirás instrucciones "
+                        + "para restablecer tu contraseña.",
+                response.message()
+        );
+
+
         verify(userRepository).findByEmail("ana@usi.com");
         verifyNoInteractions(passwordResetRepository, emailService);
     }
@@ -94,7 +102,11 @@ class ForgotPasswordServiceImplTest {
         MessageResponseDto response = forgotPasswordService.sendResetPasswordEmail(requestDto);
 
         // Assert: Revisa la respuesta exitosa y captura la entidad guardada
-        assertEquals("Correo de recuperación enviado exitosamente.", response.message());
+        assertEquals(
+                "Si existe una cuenta con ese correo, recibirás instrucciones "
+                        + "para restablecer tu contraseña.",
+                response.message()
+        );
 
         ArgumentCaptor<PasswordReset> resetCaptor = ArgumentCaptor.forClass(PasswordReset.class);
         verify(passwordResetRepository).save(resetCaptor.capture());

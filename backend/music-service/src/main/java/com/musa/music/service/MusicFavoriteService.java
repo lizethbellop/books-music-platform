@@ -1,5 +1,7 @@
 package com.musa.music.service;
 
+import java.util.UUID;
+
 import com.musa.music.dto.MusicFavoriteRequest;
 import com.musa.music.entity.MusicContent;
 import com.musa.music.entity.MusicContentType;
@@ -54,7 +56,7 @@ public class MusicFavoriteService {
     }
 
     public void removeFavorite(
-            Long userId,
+            UUID userId,
             String spotifyId,
             MusicContentType contentType
     ) {
@@ -88,7 +90,7 @@ public class MusicFavoriteService {
     }
 
     public boolean isFavorite(
-            Long userId,
+            UUID userId,
             String spotifyId,
             MusicContentType contentType
     ) {

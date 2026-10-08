@@ -1,5 +1,9 @@
 # Books & Music Platform
 
+Para preparar los archivos locales de secretos y revisar la corrección de navegación, consultar [Configuración local](docs/CONFIGURACION_LOCAL.md). Autenticación usa 8083; música conserva 8080.
+
+Para Windows, seguir [Guía de instalación y ejecución](docs/GUIA_WINDOWS.md). El [inventario de pruebas](docs/CONTEO_PRUEBAS.md) distingue unitarias, pruebas Spring e integración.
+
 ## Puertos locales del equipo
 
 Cada servicio usa un puerto distinto, pero todas las integrantes deben conservar
@@ -11,7 +15,7 @@ la misma asignación en sus propias computadoras:
 | Music Service | 8080 | `http://localhost:8080/api/music` |
 | Books Service | 8081 | `http://localhost:8081/books` |
 | Profile Service | 8082 | `http://localhost:8082/api/profiles` |
-| Users Service (reservado) | 8083 | `http://localhost:8083` |
+| Users Service | 8083 | `http://localhost:8083` |
 | Social Service (reservado) | 8084 | `http://localhost:8084` |
 | Communities Service (reservado) | 8085 | `http://localhost:8085` |
 | Chat Service (reservado) | 8086 | `http://localhost:8086` |

@@ -1,0 +1,610 @@
+openapi: 3.0.3
+info:
+  title: API de perfil de Musa
+  version: 0.1.0
+  description: Contrato basado en el código local. Autenticación Bearer, inicialización de perfil
+    y resolución de listas implementadas. La uniformidad de errores sigue pendiente.
+  x-implementation-status: autenticación y listas implementadas; uniformidad de errores pendiente
+servers:
+  - url: http://localhost:8082
+security:
+  - BearerAuth: []
+paths:
+  /api/profiles/me:
+    get:
+      summary: Consultar perfil propio
+      operationId: getOwnProfile
+      description: Usa el UUID del token validado. Reemplaza el X-User-Id actual; no se confía en
+        un header enviado libremente.
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    put:
+      summary: Editar perfil propio
+      operationId: updateOwnProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    post:
+      summary: Inicializar perfil propio
+      operationId: ensureOwnProfile
+      description: 'PROPUESTA NUEVA: llamada del cliente después del login para crear el perfil si
+        falta. Idempotente: devuelve el existente sin sobrescribirlo. El UUID procede del token;
+        valores iniciales: perfil público, biografía vacía, sin foto. No accede a la BD de autenticación.'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+      x-implementation-status: inicialización idempotente implementada
+  /api/profiles/me/photo:
+    post:
+      summary: Actualizar foto de perfil
+      operationId: uploadOwnPhoto
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG o WebP. Máximo 5 MiB (5242880 bytes).
+              required:
+                - file
+  /api/profiles/me/lists:
+    get:
+      summary: Consultar listas propias
+      operationId: getOwnLists
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/List'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    post:
+      summary: Crear lista
+      operationId: createList
+      description: Crear una lista vacía solo requiere la BD de perfil.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListInput'
+      responses:
+        '201':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/profiles/me/lists/{listId}:
+    get:
+      summary: Consultar detalle de lista
+      operationId: getListDetail
+      description: 'Solo su dueño. Se resuelve BOOK mediante GET /books/{externalId}, SONG
+        y ARTIST mediante GET /api/music/{type}/{spotifyId}. Una dependencia caída no elimina la
+        lista: marca UNAVAILABLE y conserva la referencia. NOT_FOUND distingue una referencia inexistente.
+        content y resolutionStatus están implementados mediante consultas REST a Libros y Música.'
+      parameters:
+        - &id001
+          name: listId
+          in: path
+          required: true
+          description: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListDetail'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    put:
+      summary: Editar lista
+      operationId: updateList
+      parameters:
+        - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListInput'
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    delete:
+      summary: Eliminar lista
+      operationId: deleteList
+      parameters:
+        - *id001
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/profiles/me/lists/{listId}/elements:
+    post:
+      summary: Agregar elemento a una lista
+      operationId: addListElement
+      description: 'Solo su dueño. PROPUESTA: verificar la referencia por REST antes de insertarla.
+        Si el proveedor no responde, no insertar y devolver 503; conservar el resto de la lista.
+        No copiar tablas ni leer otra BD.'
+      parameters:
+        - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListElementInput'
+      responses:
+        '201':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListElement'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/profiles/me/lists/{listId}/elements/{elementId}:
+    delete:
+      summary: Quitar elemento de una lista
+      operationId: removeListElement
+      parameters:
+        - *id001
+        - &id002
+          name: elementId
+          in: path
+          required: true
+          description: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/profiles/me/preferences:
+    get:
+      summary: Consultar preferencias
+      operationId: getOwnPreferences
+      responses:
+        '200':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    post:
+      summary: Agregar preferencia
+      operationId: addPreference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceInput'
+      responses:
+        '201':
+          description: Operación completada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenceElement'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+  /api/profiles/me/preferences/{elementId}:
+    delete:
+      summary: Quitar preferencia
+      operationId: removePreference
+      parameters:
+        - *id002
+      responses:
+        '204':
+          description: Operación completada.
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token de autenticación, no token de Spotify. Validar firma, vencimiento,
+        emisor y audiencia; usuario UUID en sub en el contrato objetivo.
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        biography:
+          type: string
+          nullable: true
+        profilePictureUrl:
+          type: string
+          nullable: true
+        privateProfile:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - id
+        - userId
+        - privateProfile
+        - createdAt
+        - updatedAt
+    ProfileUpdate:
+      type: object
+      properties:
+        biography:
+          type: string
+          maxLength: 500
+          nullable: true
+        privateProfile:
+          type: boolean
+      required:
+        - privateProfile
+    ListInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+      required:
+        - name
+    List:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha y hora UTC en el contrato objetivo; normalizar las fechas actuales sin
+            zona al implementar.
+      required:
+        - id
+        - name
+        - createdAt
+    ListElementInput:
+      type: object
+      properties:
+        elementType:
+          type: string
+          enum:
+            - BOOK
+            - SONG
+            - ARTIST
+        referenceId:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: 'BOOK: externalId de Open Library sin /works/. SONG o ARTIST: spotifyId. Nunca
+            el ID interno de la BD.'
+      required:
+        - elementType
+        - referenceId
+    ListElement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        elementType:
+          type: string
+          enum:
+            - BOOK
+            - SONG
+            - ARTIST
+        referenceId:
+          type: string
+        resolutionStatus:
+          type: string
+          enum:
+            - AVAILABLE
+            - NOT_FOUND
+            - UNAVAILABLE
+          description: 'Resultado al resolver la referencia.'
+        content:
+          nullable: true
+          oneOf:
+            - $ref: ./libros.yaml#/components/schemas/BookDetail
+            - $ref: ./musica.yaml#/components/schemas/MusicDetail
+          description: 'Detalle obtenido mediante REST al servicio propietario.'
+      required:
+        - id
+        - elementType
+        - referenceId
+    ListDetail:
+      allOf:
+        - $ref: '#/components/schemas/List'
+        - type: object
+          properties:
+            elements:
+              type: array
+              items:
+                $ref: '#/components/schemas/ListElement'
+          required:
+            - elements
+    PreferenceInput:
+      type: object
+      properties:
+        elementType:
+          type: string
+          enum:
+            - BOOK
+            - SONG
+            - ARTIST
+            - AUTHOR
+        referenceId:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: AUTHOR sigue permitido en el código actual, pero su catálogo y formato de
+            referencia entre servicios están pendientes.
+      required:
+        - elementType
+        - referenceId
+    PreferenceElement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        elementType:
+          type: string
+          enum:
+            - BOOK
+            - SONG
+            - ARTIST
+            - AUTHOR
+        referenceId:
+          type: string
+        resolutionStatus:
+          type: string
+          enum: [AVAILABLE, NOT_FOUND, UNAVAILABLE]
+        content:
+          nullable: true
+          oneOf:
+            - $ref: ./libros.yaml#/components/schemas/BookDetail
+            - $ref: ./musica.yaml#/components/schemas/MusicDetail
+      required:
+        - id
+        - elementType
+        - referenceId
+    Preferences:
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreferenceElement'
+      required:
+        - elements
+  responses:
+    Error400:
+      description: Solicitud inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error401:
+      description: Falta un access token válido o está vencido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error403:
+      description: El usuario no tiene permiso sobre el recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error404:
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error502:
+      description: Falló la respuesta del proveedor externo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error503:
+      description: Una dependencia necesaria no está disponible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error409:
+      description: El elemento ya existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

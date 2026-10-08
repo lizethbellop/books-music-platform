@@ -5,7 +5,6 @@ import com.musa.users.dto.response.MessageResponseDto;
 import com.musa.users.entity.PasswordReset; // <--- Tu entidad REAL
 import com.musa.users.entity.User;
 import com.musa.users.exception.EmailSendException;
-import com.musa.users.exception.ResourceNotFoundException;
 import com.musa.users.repository.PasswordResetRepository;
 import com.musa.users.repository.UserRepository;
 import com.musa.users.service.EmailService;
@@ -25,12 +24,19 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
     private final UserRepository userRepository;
     private final PasswordResetRepository passwordResetRepository;
     private final EmailService emailService;
+    private static final String RECOVERY_MESSAGE =
+            "Si existe una cuenta con ese correo, recibirás instrucciones "
+                    + "para restablecer tu contraseña.";
 
     @Override
     public MessageResponseDto sendResetPasswordEmail(ForgotPasswordRequestDto request) {
         //request.email() porque ForgotPasswordRequestDto es un record
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResourceNotFoundException("No existe un usuario con el correo: " + request.email()));
+                .orElse(null);
+
+        if (user == null) {
+            return new MessageResponseDto(RECOVERY_MESSAGE);
+        }
 
         //generar el token único
         String resetToken = UUID.randomUUID().toString();
@@ -49,7 +55,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
             throw new EmailSendException("Error al enviar el correo de recuperación.");
         }
 
-        return new MessageResponseDto("Correo de recuperación enviado exitosamente.");
+        return new MessageResponseDto(RECOVERY_MESSAGE);
     }
 }
 

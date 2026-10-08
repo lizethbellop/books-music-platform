@@ -8,27 +8,22 @@ import '../../data/services/books_api_service.dart';
 
 class BookDetailPage extends StatefulWidget {
   final String externalId;
+  final String userId;
 
   const BookDetailPage({
     super.key,
     required this.externalId,
+    required this.userId,
   });
 
   @override
-  State<BookDetailPage> createState() =>
-      _BookDetailPageState();
+  State<BookDetailPage> createState() => _BookDetailPageState();
 }
 
-class _BookDetailPageState
-    extends State<BookDetailPage> {
-  final BooksApiService _booksApiService =
-      BooksApiService();
+class _BookDetailPageState extends State<BookDetailPage> {
+  final BooksApiService _booksApiService = BooksApiService();
 
-  static const String _testUserId =
-      '550e8400-e29b-41d4-a716-446655440000';
-
-  final TextEditingController _reviewController =
-      TextEditingController();
+  final TextEditingController _reviewController = TextEditingController();
 
   BookDetail? _book;
 
@@ -61,7 +56,7 @@ class _BookDetailPageState
 
   Review? get _currentUserReview {
     for (final review in _reviews) {
-      if (review.userId == _testUserId) {
+      if (review.userId == widget.userId) {
         return review;
       }
     }
@@ -74,12 +69,12 @@ class _BookDetailPageState
       if (_isFavorite) {
         await _booksApiService.removeFavorite(
           externalId: widget.externalId,
-          userId: _testUserId,
+          userId: widget.userId,
         );
       } else {
         await _booksApiService.addFavorite(
           externalId: widget.externalId,
-          userId: _testUserId,
+          userId: widget.userId,
         );
       }
 
@@ -102,11 +97,7 @@ class _BookDetailPageState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No se pudo actualizar favoritos',
-          ),
-        ),
+        const SnackBar(content: Text('No se pudo actualizar favoritos')),
       );
     }
   }
@@ -115,8 +106,7 @@ class _BookDetailPageState
     required String label,
     required String status,
   }) {
-    final isSelected =
-        _selectedReadingStatus == status;
+    final isSelected = _selectedReadingStatus == status;
 
     return InkWell(
       onTap: () {
@@ -124,25 +114,17 @@ class _BookDetailPageState
       },
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.ink
-              : AppColors.lilac.withValues(
-                  alpha: 0.45,
-                ),
-          borderRadius:
-              BorderRadius.circular(999),
+              : AppColors.lilac.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: AppTextStyles.button.copyWith(
-            color: isSelected
-                ? AppColors.warmWhite
-                : AppColors.ink,
+            color: isSelected ? AppColors.warmWhite : AppColors.ink,
           ),
         ),
       ),
@@ -151,25 +133,17 @@ class _BookDetailPageState
 
   Future<void> _loadUserBookState() async {
     try {
-      final library =
-          await _booksApiService.getLibrary(
-        _testUserId,
-      );
+      final library = await _booksApiService.getLibrary(widget.userId);
 
-      final favorites =
-          await _booksApiService.getFavorites(
-        _testUserId,
-      );
+      final favorites = await _booksApiService.getFavorites(widget.userId);
 
       if (!mounted) return;
 
       String? readingStatus;
 
       for (final userBook in library) {
-        if (userBook.externalId ==
-            widget.externalId) {
-          readingStatus =
-              userBook.readingStatus;
+        if (userBook.externalId == widget.externalId) {
+          readingStatus = userBook.readingStatus;
           break;
         }
       }
@@ -177,16 +151,14 @@ class _BookDetailPageState
       bool isFavorite = false;
 
       for (final favorite in favorites) {
-        if (favorite.externalId ==
-            widget.externalId) {
+        if (favorite.externalId == widget.externalId) {
           isFavorite = true;
           break;
         }
       }
 
       setState(() {
-        _selectedReadingStatus =
-            readingStatus;
+        _selectedReadingStatus = readingStatus;
 
         _isFavorite = isFavorite;
       });
@@ -198,10 +170,7 @@ class _BookDetailPageState
 
   Future<void> _loadBook() async {
     try {
-      final book =
-          await _booksApiService.getBookDetail(
-        widget.externalId,
-      );
+      final book = await _booksApiService.getBookDetail(widget.externalId);
 
       if (!mounted) return;
 
@@ -213,8 +182,7 @@ class _BookDetailPageState
       if (!mounted) return;
 
       setState(() {
-        _errorMessage =
-            'No se pudo cargar la información del libro.';
+        _errorMessage = 'No se pudo cargar la información del libro.';
 
         _isLoading = false;
       });
@@ -227,17 +195,14 @@ class _BookDetailPageState
     });
 
     try {
-      final reviews =
-          await _booksApiService.getReviews(
-        widget.externalId,
-      );
+      final reviews = await _booksApiService.getReviews(widget.externalId);
 
       if (!mounted) return;
 
       Review? currentUserReview;
 
       for (final review in reviews) {
-        if (review.userId == _testUserId) {
+        if (review.userId == widget.userId) {
           currentUserReview = review;
           break;
         }
@@ -249,12 +214,9 @@ class _BookDetailPageState
         _isLoadingReviews = false;
 
         if (currentUserReview != null) {
-          _selectedRating =
-              currentUserReview.rating;
+          _selectedRating = currentUserReview.rating;
 
-          _reviewController.text =
-              currentUserReview.reviewText ??
-                  '';
+          _reviewController.text = currentUserReview.reviewText ?? '';
         }
       });
     } catch (e) {
@@ -266,14 +228,11 @@ class _BookDetailPageState
     }
   }
 
-  Future<void> _updateReadingStatus(
-    String status,
-  ) async {
+  Future<void> _updateReadingStatus(String status) async {
     try {
-      await _booksApiService
-          .updateReadingStatus(
+      await _booksApiService.updateReadingStatus(
         externalId: widget.externalId,
-        userId: _testUserId,
+        userId: widget.userId,
         status: status,
       );
 
@@ -283,35 +242,25 @@ class _BookDetailPageState
         _selectedReadingStatus = status;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Estado de lectura actualizado',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Estado de lectura actualizado')),
       );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'No se pudo actualizar el estado de lectura',
-          ),
+          content: Text('No se pudo actualizar el estado de lectura'),
         ),
       );
     }
   }
 
-  Future<void> _rateBook(
-    double rating,
-  ) async {
+  Future<void> _rateBook(double rating) async {
     try {
       await _booksApiService.rateBook(
         externalId: widget.externalId,
-        userId: _testUserId,
+        userId: widget.userId,
         rating: rating,
       );
 
@@ -321,32 +270,21 @@ class _BookDetailPageState
         _selectedRating = rating;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            'Calificación guardada: $rating estrellas',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Calificación guardada: $rating estrellas')),
       );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No se pudo guardar la calificación',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo guardar la calificación')),
       );
     }
   }
 
   Future<void> _saveReview() async {
     if (_selectedRating == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             'Selecciona una calificación antes de guardar la reseña',
@@ -357,32 +295,24 @@ class _BookDetailPageState
       return;
     }
 
-    final reviewText =
-        _reviewController.text.trim();
+    final reviewText = _reviewController.text.trim();
 
-    final isCreating =
-        _currentUserReview == null;
+    final isCreating = _currentUserReview == null;
 
     try {
       if (isCreating) {
         await _booksApiService.createReview(
           externalId: widget.externalId,
-          userId: _testUserId,
+          userId: widget.userId,
           rating: _selectedRating!,
-          reviewText:
-              reviewText.isEmpty
-                  ? null
-                  : reviewText,
+          reviewText: reviewText.isEmpty ? null : reviewText,
         );
       } else {
         await _booksApiService.updateReview(
           externalId: widget.externalId,
-          userId: _testUserId,
+          userId: widget.userId,
           rating: _selectedRating!,
-          reviewText:
-              reviewText.isEmpty
-                  ? null
-                  : reviewText,
+          reviewText: reviewText.isEmpty ? null : reviewText,
         );
       }
 
@@ -390,26 +320,16 @@ class _BookDetailPageState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isCreating
-                ? 'Reseña creada'
-                : 'Reseña actualizada',
-          ),
+          content: Text(isCreating ? 'Reseña creada' : 'Reseña actualizada'),
         ),
       );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No se pudo guardar la reseña',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo guardar la reseña')),
       );
     }
   }
@@ -418,7 +338,7 @@ class _BookDetailPageState
     try {
       await _booksApiService.deleteReview(
         externalId: widget.externalId,
-        userId: _testUserId,
+        userId: widget.userId,
       );
 
       if (!mounted) return;
@@ -434,42 +354,26 @@ class _BookDetailPageState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Reseña eliminada',
-          ),
-        ),
-      );
+          .showSnackBar(const SnackBar(content: Text('Reseña eliminada')));
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No se pudo eliminar la reseña',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo eliminar la reseña')),
       );
     }
   }
 
-  Widget _buildRatingStar(
-    int index,
-  ) {
+  Widget _buildRatingStar(int index) {
     final starNumber = index + 1;
 
-    final currentRating =
-        _selectedRating ?? 0.0;
+    final currentRating = _selectedRating ?? 0.0;
 
     IconData icon;
 
     if (currentRating >= starNumber) {
       icon = Icons.star;
-    } else if (
-        currentRating >=
-            starNumber - 0.5) {
+    } else if (currentRating >= starNumber - 0.5) {
       icon = Icons.star_half;
     } else {
       icon = Icons.star_border;
@@ -480,25 +384,16 @@ class _BookDetailPageState
       height: 44,
       child: Stack(
         children: [
-          Center(
-            child: Icon(
-              icon,
-              size: 36,
-              color: AppColors.ink,
-            ),
-          ),
+          Center(child: Icon(icon, size: 36, color: AppColors.ink)),
           Positioned(
             left: 0,
             top: 0,
             bottom: 0,
             width: 22,
             child: GestureDetector(
-              behavior:
-                  HitTestBehavior.translucent,
+              behavior: HitTestBehavior.translucent,
               onTap: () {
-                _rateBook(
-                  starNumber - 0.5,
-                );
+                _rateBook(starNumber - 0.5);
               },
             ),
           ),
@@ -508,12 +403,9 @@ class _BookDetailPageState
             bottom: 0,
             width: 22,
             child: GestureDetector(
-              behavior:
-                  HitTestBehavior.translucent,
+              behavior: HitTestBehavior.translucent,
               onTap: () {
-                _rateBook(
-                  starNumber.toDouble(),
-                );
+                _rateBook(starNumber.toDouble());
               },
             ),
           ),
@@ -527,14 +419,10 @@ class _BookDetailPageState
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        backgroundColor:
-            AppColors.cream,
-        foregroundColor:
-            AppColors.ink,
+        backgroundColor: AppColors.cream,
+        foregroundColor: AppColors.ink,
         elevation: 0,
-        title: const Text(
-          'Detalle del libro',
-        ),
+        title: const Text('Detalle del libro'),
       ),
       body: _buildContent(),
     );
@@ -542,19 +430,12 @@ class _BookDetailPageState
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child:
-            CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
       return Center(
-        child: Text(
-          _errorMessage!,
-          style:
-              AppTextStyles.secondary,
-        ),
+        child: Text(_errorMessage!, style: AppTextStyles.secondary),
       );
     }
 
@@ -562,8 +443,7 @@ class _BookDetailPageState
       return Center(
         child: Text(
           'No se encontró información del libro.',
-          style:
-              AppTextStyles.secondary,
+          style: AppTextStyles.secondary,
         ),
       );
     }
@@ -571,71 +451,38 @@ class _BookDetailPageState
     final book = _book!;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 32,
-        vertical: 28,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
-            maxWidth: 1200,
-          ),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               LayoutBuilder(
-                builder:
-                    (
-                      context,
-                      constraints,
-                    ) {
-                  final isDesktop =
-                      constraints.maxWidth >=
-                          760;
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth >= 760;
 
                   if (isDesktop) {
                     return Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildCover(book),
 
-                        const SizedBox(
-                          width: 42,
-                        ),
+                        const SizedBox(width: 42),
 
-                        Expanded(
-                          child:
-                              _buildBookHeaderInfo(
-                            book,
-                          ),
-                        ),
+                        Expanded(child: _buildBookHeaderInfo(book)),
                       ],
                     );
                   }
 
                   return Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child:
-                            _buildCover(
-                          book,
-                        ),
-                      ),
+                      Center(child: _buildCover(book)),
 
-                      const SizedBox(
-                        height: 28,
-                      ),
+                      const SizedBox(height: 28),
 
-                      _buildBookHeaderInfo(
-                        book,
-                      ),
+                      _buildBookHeaderInfo(book),
                     ],
                   );
                 },
@@ -643,9 +490,7 @@ class _BookDetailPageState
 
               const SizedBox(height: 44),
 
-              const Divider(
-                color: AppColors.border,
-              ),
+              const Divider(color: AppColors.border),
 
               const SizedBox(height: 34),
 
@@ -657,16 +502,12 @@ class _BookDetailPageState
 
               const SizedBox(height: 44),
 
-              _buildDescriptionSection(
-                book,
-              ),
+              _buildDescriptionSection(book),
 
               if (book.subjects.isNotEmpty) ...[
                 const SizedBox(height: 38),
 
-                _buildSubjectsSection(
-                  book,
-                ),
+                _buildSubjectsSection(book),
               ],
 
               const SizedBox(height: 44),
@@ -681,65 +522,45 @@ class _BookDetailPageState
     );
   }
 
-  Widget _buildCover(
-    BookDetail book,
-  ) {
+  Widget _buildCover(BookDetail book) {
     return Container(
       width: 235,
       decoration: BoxDecoration(
-        borderRadius:
-            BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
             blurRadius: 18,
             offset: Offset(0, 8),
-            color: Color(
-              0x18000000,
-            ),
+            color: Color(0x18000000),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: AspectRatio(
         aspectRatio: 2 / 3,
-        child:
-            book.coverUrl != null &&
-                    book.coverUrl!.isNotEmpty
-                ? Image.network(
-                    book.coverUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (
-                      context,
-                      error,
-                      stackTrace,
-                    ) {
-                      return _placeholder();
-                    },
-                  )
-                : _placeholder(),
+        child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+            ? Image.network(
+                book.coverUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _placeholder();
+                },
+              )
+            : _placeholder(),
       ),
     );
   }
 
-  Widget _buildBookHeaderInfo(
-    BookDetail book,
-  ) {
+  Widget _buildBookHeaderInfo(BookDetail book) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          book.title,
-          style:
-              AppTextStyles.pageTitle,
-        ),
+        Text(book.title, style: AppTextStyles.pageTitle),
 
         const SizedBox(height: 10),
 
         Text(
-          book.authors.isEmpty
-              ? 'Autor desconocido'
-              : book.authors.join(', '),
+          book.authors.isEmpty ? 'Autor desconocido' : book.authors.join(', '),
           style: AppTextStyles.body,
         ),
 
@@ -748,18 +569,13 @@ class _BookDetailPageState
 
           Text(
             'Primera publicación: ${book.firstPublishDate}',
-            style:
-                AppTextStyles.secondary,
+            style: AppTextStyles.secondary,
           ),
         ],
 
         const SizedBox(height: 30),
 
-        Text(
-          'Estado de lectura',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Estado de lectura', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 14),
 
@@ -767,18 +583,9 @@ class _BookDetailPageState
           spacing: 10,
           runSpacing: 10,
           children: [
-            _buildReadingStatusButton(
-              label: 'Por leer',
-              status: 'POR_LEER',
-            ),
-            _buildReadingStatusButton(
-              label: 'Leyendo',
-              status: 'LEYENDO',
-            ),
-            _buildReadingStatusButton(
-              label: 'Leído',
-              status: 'LEIDO',
-            ),
+            _buildReadingStatusButton(label: 'Por leer', status: 'POR_LEER'),
+            _buildReadingStatusButton(label: 'Leyendo', status: 'LEYENDO'),
+            _buildReadingStatusButton(label: 'Leído', status: 'LEIDO'),
           ],
         ),
 
@@ -787,15 +594,11 @@ class _BookDetailPageState
         OutlinedButton.icon(
           onPressed: _toggleFavorite,
           icon: Icon(
-            _isFavorite
-                ? Icons.favorite
-                : Icons.favorite_border,
+            _isFavorite ? Icons.favorite : Icons.favorite_border,
             color: AppColors.ink,
           ),
           label: Text(
-            _isFavorite
-                ? 'Quitar de favoritos'
-                : 'Agregar a favoritos',
+            _isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos',
           ),
         ),
       ],
@@ -804,14 +607,9 @@ class _BookDetailPageState
 
   Widget _buildRatingSection() {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Calificación',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Calificación', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 8),
 
@@ -819,47 +617,31 @@ class _BookDetailPageState
           _selectedRating == null
               ? 'Selecciona una calificación'
               : 'Tu calificación: $_selectedRating / 5',
-          style:
-              AppTextStyles.secondary,
+          style: AppTextStyles.secondary,
         ),
 
         const SizedBox(height: 10),
 
-        Wrap(
-          children: List.generate(
-            5,
-            (index) =>
-                _buildRatingStar(index),
-          ),
-        ),
+        Wrap(children: List.generate(5, (index) => _buildRatingStar(index))),
       ],
     );
   }
 
   Widget _buildReviewEditor() {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tu reseña',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Tu reseña', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 14),
 
         TextField(
-          controller:
-              _reviewController,
+          controller: _reviewController,
           minLines: 4,
           maxLines: 6,
-          decoration:
-              const InputDecoration(
-            hintText:
-                'Escribe tu opinión sobre este libro...',
-            border:
-                OutlineInputBorder(),
+          decoration: const InputDecoration(
+            hintText: 'Escribe tu opinión sobre este libro...',
+            border: OutlineInputBorder(),
           ),
         ),
 
@@ -871,9 +653,7 @@ class _BookDetailPageState
           children: [
             ElevatedButton.icon(
               onPressed: _saveReview,
-              icon: const Icon(
-                Icons.save_outlined,
-              ),
+              icon: const Icon(Icons.save_outlined),
               label: Text(
                 _currentUserReview == null
                     ? 'Publicar reseña'
@@ -883,14 +663,9 @@ class _BookDetailPageState
 
             if (_currentUserReview != null)
               OutlinedButton.icon(
-                onPressed:
-                    _deleteReview,
-                icon: const Icon(
-                  Icons.delete_outline,
-                ),
-                label: const Text(
-                  'Eliminar reseña',
-                ),
+                onPressed: _deleteReview,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Eliminar reseña'),
               ),
           ],
         ),
@@ -898,24 +673,16 @@ class _BookDetailPageState
     );
   }
 
-  Widget _buildDescriptionSection(
-    BookDetail book,
-  ) {
+  Widget _buildDescriptionSection(BookDetail book) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Descripción',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Descripción', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 14),
 
         Text(
-          book.description?.isNotEmpty ==
-                  true
+          book.description?.isNotEmpty == true
               ? book.description!
               : 'No hay descripción disponible.',
           style: AppTextStyles.body,
@@ -924,62 +691,38 @@ class _BookDetailPageState
     );
   }
 
-  Widget _buildSubjectsSection(
-    BookDetail book,
-  ) {
+  Widget _buildSubjectsSection(BookDetail book) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Temas',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Temas', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 14),
 
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children:
-              book.subjects
-                  .take(8)
-                  .map(
-                    (subject) =>
-                        Container(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration:
-                          BoxDecoration(
-                        color: AppColors
-                            .lilac
-                            .withValues(
-                          alpha: 0.45,
-                        ),
-                        borderRadius:
-                            BorderRadius
-                                .circular(
-                          999,
-                        ),
-                      ),
-                      child: Text(
-                        subject,
-                        style:
-                            AppTextStyles
-                                .secondary
-                                .copyWith(
-                          color:
-                              AppColors.ink,
-                        ),
-                      ),
+          children: book.subjects
+              .take(8)
+              .map(
+                (subject) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.lilac.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    subject,
+                    style: AppTextStyles.secondary.copyWith(
+                      color: AppColors.ink,
                     ),
-                  )
-                  .toList(),
+                  ),
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -987,104 +730,58 @@ class _BookDetailPageState
 
   Widget _buildReviewsSection() {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Reseñas',
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text('Reseñas', style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 14),
 
         if (_isLoadingReviews)
-          const Center(
-            child:
-                CircularProgressIndicator(),
-          )
+          const Center(child: CircularProgressIndicator())
         else if (_reviews.isEmpty)
           Text(
             'Todavía no hay reseñas para este libro.',
-            style:
-                AppTextStyles.secondary,
+            style: AppTextStyles.secondary,
           )
         else
           Column(
-            children:
-                _reviews.map(
-              (review) {
-                return Container(
-                  width:
-                      double.infinity,
-                  margin:
-                      const EdgeInsets.only(
-                    bottom: 14,
-                  ),
-                  padding:
-                      const EdgeInsets.all(
-                    18,
-                  ),
-                  decoration:
-                      BoxDecoration(
-                    color:
-                        AppColors.warmWhite,
-                    borderRadius:
-                        BorderRadius
-                            .circular(16),
-                    border:
-                        Border.all(
-                      color:
-                          AppColors.border,
+            children: _reviews.map((review) {
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.warmWhite,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 18, color: AppColors.ink),
+
+                        const SizedBox(width: 6),
+
+                        Text('${review.rating} / 5', style: AppTextStyles.body),
+                      ],
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            size: 18,
-                            color:
-                                AppColors.ink,
-                          ),
 
-                          const SizedBox(
-                            width: 6,
-                          ),
+                    const SizedBox(height: 10),
 
-                          Text(
-                            '${review.rating} / 5',
-                            style:
-                                AppTextStyles
-                                    .body,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(
-                        height: 10,
-                      ),
-
-                      Text(
-                        review.reviewText
-                                    ?.isNotEmpty ==
-                                true
-                            ? review
-                                .reviewText!
-                            : 'Sin comentario.',
-                        style:
-                            AppTextStyles
-                                .body,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ).toList(),
+                    Text(review.username, style: AppTextStyles.cardTitle),
+                    const SizedBox(height: 8),
+                    Text(
+                      review.reviewText?.isNotEmpty == true
+                          ? review.reviewText!
+                          : 'Sin comentario.',
+                      style: AppTextStyles.body,
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
       ],
     );
@@ -1094,11 +791,7 @@ class _BookDetailPageState
     return Container(
       color: AppColors.lilac,
       child: const Center(
-        child: Icon(
-          Icons.menu_book_outlined,
-          size: 60,
-          color: AppColors.ink,
-        ),
+        child: Icon(Icons.menu_book_outlined, size: 60, color: AppColors.ink),
       ),
     );
   }

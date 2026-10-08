@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.musa.users.session.RefreshSessionStore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 class LogoutServiceImplTest {
 
     @Mock
-    private StringRedisTemplate redisTemplate;
+    private RefreshSessionStore refreshSessionStore;
 
     @InjectMocks
     private LogoutServiceImpl logoutService;
@@ -35,7 +35,7 @@ class LogoutServiceImplTest {
         // Assert
         assertEquals("Sesión cerrada exitosamente.", response.message());
 
-        // Verify: Confirma que se eliminó la clave prefijada "RT:" con el token recibido
-        verify(redisTemplate).delete("RT:" + refreshToken);
+        // Verify: revoca la sesión mediante el almacén de refresh tokens
+        verify(refreshSessionStore).revoke(refreshToken);
     }
 }

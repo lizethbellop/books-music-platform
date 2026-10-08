@@ -1,5 +1,7 @@
 package com.musa.music.entity;
 
+import java.util.UUID;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,7 +29,7 @@ public class MusicReview {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private UUID userId;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "music_content_id", nullable = false)

@@ -7,12 +7,14 @@ import '../../data/music_item.dart';
 import '../pages/music_detail_page.dart';
 
 class MusicCard extends StatelessWidget {
+  final String userId;
   final MusicItem item;
   final Future<void> Function()? onReturn;
 
   const MusicCard({
     super.key,
     required this.item,
+    required this.userId,
     this.onReturn,
   });
 
@@ -37,6 +39,7 @@ class MusicCard extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) {
                   return MusicDetailPage(
+                    userId: userId,
                     item: searchItem,
                   );
                 },

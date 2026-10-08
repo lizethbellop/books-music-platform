@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import com.musa.books.config.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/books")
@@ -22,8 +25,11 @@ public class FavoriteBookController {
     @PostMapping("/{externalId}/favorites")
     public ResponseEntity<FavoriteBookResponse> addFavorite(
             @PathVariable String externalId,
-            @RequestParam UUID userId
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         FavoriteBook favorite = favoriteBookService.addFavorite(userId, externalId);
 
         return ResponseEntity.ok(toResponse(favorite));
@@ -31,8 +37,11 @@ public class FavoriteBookController {
 
     @GetMapping("/favorites")
     public ResponseEntity<List<FavoriteBookResponse>> getFavoritesByUser(
-            @RequestParam UUID userId
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         List<FavoriteBookResponse> favorites =
                 favoriteBookService.getFavoritesByUser(userId)
                         .stream()
@@ -45,8 +54,11 @@ public class FavoriteBookController {
     @DeleteMapping("/{externalId}/favorites")
     public ResponseEntity<Void> removeFavorite(
             @PathVariable String externalId,
-            @RequestParam UUID userId
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         favoriteBookService.removeFavorite(userId, externalId);
 
         return ResponseEntity.noContent().build();

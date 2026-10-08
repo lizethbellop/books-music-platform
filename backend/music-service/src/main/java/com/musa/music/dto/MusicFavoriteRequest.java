@@ -1,5 +1,7 @@
 package com.musa.music.dto;
 
+import java.util.UUID;
+
 import com.musa.music.entity.MusicContentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 public record MusicFavoriteRequest(
 
         @NotNull
-        Long userId,
+        UUID userId,
 
         @NotBlank
         String spotifyId,

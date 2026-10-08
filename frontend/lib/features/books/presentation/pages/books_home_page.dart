@@ -8,7 +8,9 @@ import '../widgets/book_filter_chip.dart';
 import 'book_detail_page.dart';
 
 class BooksHomePage extends StatefulWidget {
-  const BooksHomePage({super.key});
+  final String userId;
+
+  const BooksHomePage({super.key, required this.userId});
 
   @override
   State<BooksHomePage> createState() => _BooksHomePageState();
@@ -21,8 +23,6 @@ class _BooksHomePageState extends State<BooksHomePage> {
   final BooksApiService _booksApiService =
       BooksApiService();
 
-  static const String _testUserId =
-      '550e8400-e29b-41d4-a716-446655440000';
 
   List<BookSearchItem> _results = [];
   List<BookSearchItem> _libraryResults = [];
@@ -172,7 +172,7 @@ Future<void> _loadExploreBooks() async {
       if (_selectedFilter == 'Favoritos') {
         final favorites =
             await _booksApiService.getFavorites(
-          _testUserId,
+          widget.userId,
         );
 
         if (!mounted) return;
@@ -199,7 +199,7 @@ Future<void> _loadExploreBooks() async {
       } else {
         final library =
             await _booksApiService.getLibrary(
-          _testUserId,
+          widget.userId,
         );
 
         if (!mounted) return;
@@ -498,6 +498,7 @@ Future<void> _loadExploreBooks() async {
                 (book) =>
                     _BookResultCard(
                   book: book,
+                  userId: widget.userId,
                 ),
               )
               .toList(),
@@ -510,9 +511,11 @@ Future<void> _loadExploreBooks() async {
 class _BookResultCard
     extends StatelessWidget {
   final BookSearchItem book;
+  final String userId;
 
   const _BookResultCard({
     required this.book,
+    required this.userId,
   });
 
   @override
@@ -529,6 +532,7 @@ class _BookResultCard
               MaterialPageRoute(
                 builder: (_) =>
                     BookDetailPage(
+                  userId: userId,
                   externalId:
                       book.externalId,
                 ),

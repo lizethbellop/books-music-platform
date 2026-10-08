@@ -10,5 +10,13 @@ public record LoginRequestDto(
         String email,
 
         @NotBlank(message = "La contraseña es obligatoria")
-        String password
-) {}
+        String password,
+
+        Boolean rememberMe
+) {
+    public LoginRequestDto {
+        if (rememberMe == null) {
+            rememberMe = false;
+        }
+    }
+}

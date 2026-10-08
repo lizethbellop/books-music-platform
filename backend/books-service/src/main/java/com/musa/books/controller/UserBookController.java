@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import com.musa.books.config.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/books")
@@ -25,9 +28,12 @@ public class UserBookController {
     @PutMapping("/{externalId}/reading-status")
     public ResponseEntity<UserBookResponse> updateReadingStatus(
             @PathVariable String externalId,
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId,
             @Valid @RequestBody ReadingStatusRequest request
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         UserBook userBook =
                 userBookService.updateReadingStatus(
@@ -41,8 +47,11 @@ public class UserBookController {
 
     @GetMapping("/library")
     public ResponseEntity<List<UserBookResponse>> getLibrary(
-            @RequestParam UUID userId
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "userId", required = false) UUID suppliedUserId
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
 
         List<UserBookResponse> library =
                 userBookService.getBooksByUser(userId)

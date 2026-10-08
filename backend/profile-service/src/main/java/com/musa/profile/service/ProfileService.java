@@ -23,6 +23,16 @@ public class ProfileService {
     }
 
     @Transactional
+    public Profile ensureOwnProfile(UUID userId) {
+        profileRepository.insertIfAbsent(
+                UUID.randomUUID(),
+                userId
+        );
+
+        return getByUserId(userId);
+    }
+
+    @Transactional
     public Profile updateProfile(UUID userId, String biography, boolean privateProfile){
         Profile profile = getByUserId(userId);
 

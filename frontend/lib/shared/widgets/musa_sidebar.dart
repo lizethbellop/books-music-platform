@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../../core/routes/app_shell.dart';
+import '../../core/routes/app_section.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import 'musa_profile_avatar.dart';
 
 class MusaSidebar extends StatelessWidget {
   final AppSection selectedSection;
   final ValueChanged<AppSection> onSectionSelected;
+  final String? profilePictureUrl;
 
   const MusaSidebar({
     super.key,
     required this.selectedSection,
     required this.onSectionSelected,
+    this.profilePictureUrl,
   });
 
   @override
@@ -26,7 +29,10 @@ class MusaSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('musa.', style: AppTextStyles.logo),
+          Text(
+            'musa.',
+            style: AppTextStyles.logo.copyWith(color: AppColors.ink),
+          ),
 
           const SizedBox(height: 38),
 
@@ -84,13 +90,35 @@ class MusaSidebar extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          _SidebarItem(
-            icon: Icons.person_outline,
-            title: 'Mi perfil',
-            selected: selectedSection == AppSection.profile,
-            onTap: () {
-              onSectionSelected(AppSection.profile);
-            },
+          Center(
+            child: Tooltip(
+              message: 'Mi perfil',
+              child: Semantics(
+                label: 'Mi perfil',
+                button: true,
+                selected: selectedSection == AppSection.profile,
+                child: InkResponse(
+                  radius: 28,
+                  onTap: () => onSectionSelected(AppSection.profile),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selectedSection == AppSection.profile
+                            ? AppColors.lavender
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: MusaProfileAvatar(
+                      imageUrl: profilePictureUrl,
+                      radius: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

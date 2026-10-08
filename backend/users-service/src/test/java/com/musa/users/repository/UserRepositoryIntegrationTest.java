@@ -4,6 +4,7 @@ import com.musa.users.entity.Role;
 import com.musa.users.entity.User;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("integration")
 @SpringBootTest
 @Transactional
 class UserRepositoryIntegrationTest {
@@ -38,6 +40,7 @@ class UserRepositoryIntegrationTest {
 
         // ARRANGE: crear el usuario
         User user = new User();
+        user.setUsername("test_" + java.util.UUID.randomUUID().toString().replace("-", ""));
         user.setFullName("Ana López");
         user.setEmail("ana@usi.com");
         user.setPasswordHash("HASH_DE_PRUEBA");

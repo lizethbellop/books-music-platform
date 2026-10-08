@@ -1,4 +1,5 @@
 class RegisterRequestModel {
+  final String username;
   final String fullName;
   final String email;
   final String password;
@@ -6,6 +7,7 @@ class RegisterRequestModel {
   final String roleName;
 
   RegisterRequestModel({
+    required this.username,
     required this.fullName,
     required this.email,
     required this.password,
@@ -15,6 +17,7 @@ class RegisterRequestModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'username': username,
       'fullName': fullName,
       'email': email,
       'password': password,

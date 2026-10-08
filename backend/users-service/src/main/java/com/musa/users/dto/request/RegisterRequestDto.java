@@ -23,5 +23,9 @@ public record RegisterRequestDto(
         String confirmPassword,
 
         @NotBlank(message = "Debe seleccionar un tipo de cuenta (rol)")
-        String roleName
+        String roleName,
+
+        @NotBlank(message = "El nombre de usuario es obligatorio")
+        @Pattern(regexp = "^[A-Za-z0-9_]{3,40}$", message = "Usa de 3 a 40 letras, números o guiones bajos")
+        String username
 ) {}

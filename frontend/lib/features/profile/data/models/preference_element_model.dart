@@ -1,12 +1,12 @@
-class PreferenceElementModel {
-  final String id;
-  final String elementType;
-  final String referenceId;
+import 'list_element_model.dart';
 
+class PreferenceElementModel extends ListElementModel {
   const PreferenceElementModel({
-    required this.id,
-    required this.elementType,
-    required this.referenceId,
+    required super.id,
+    required super.elementType,
+    required super.referenceId,
+    super.resolutionStatus,
+    super.content,
   });
 
   factory PreferenceElementModel.fromJson(Map<String, dynamic> json) {
@@ -14,6 +14,8 @@ class PreferenceElementModel {
       id: json['id'] as String,
       elementType: json['elementType'] as String,
       referenceId: json['referenceId'] as String,
+      resolutionStatus: json['resolutionStatus'] as String? ?? 'UNAVAILABLE',
+      content: json['content'] as Map<String, dynamic>?,
     );
   }
 }

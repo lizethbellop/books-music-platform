@@ -5,6 +5,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Map;
 import java.util.function.Function;
+import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Interfaz de servicio para la generación, extracción de claims y validación de tokens JWT.
@@ -54,4 +56,18 @@ public interface JwtService {
      * @return boolean true si el token es válido y vigente, false en caso contrario.
      */
     boolean isTokenValid(String token, UserDetails userDetails);
+
+    String generateAccessToken(
+            UserDetails userDetails,
+            Instant sessionExpiresAt
+    );
+
+    Instant getAccessTokenExpiresAt(String token);
+
+    String generateAccessToken(
+            UserDetails userDetails,
+            UUID userId,
+            Instant sessionExpiresAt
+    );
+
 }

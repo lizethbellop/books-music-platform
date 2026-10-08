@@ -1,5 +1,7 @@
 package com.musa.music.repository;
 
+import java.util.UUID;
+
 import com.musa.music.entity.MusicFavorite;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,12 +11,12 @@ public interface MusicFavoriteRepository
         extends JpaRepository<MusicFavorite, Long> {
 
     Optional<MusicFavorite> findByUserIdAndMusicContentId(
-            Long userId,
+            UUID userId,
             Long musicContentId
     );
 
     boolean existsByUserIdAndMusicContentId(
-            Long userId,
+            UUID userId,
             Long musicContentId
     );
 }

@@ -1,5 +1,10 @@
 package com.musa.music.controller;
 
+import java.util.UUID;
+import com.musa.music.config.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+
 import com.musa.music.dto.MusicFavoriteRequest;
 import com.musa.music.dto.MusicRatingRequest;
 import com.musa.music.entity.MusicContentType;
@@ -28,8 +33,11 @@ public class MusicUserActionsController {
 
     @PostMapping("/ratings")
     public ResponseEntity<MusicRating> saveRating(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody MusicRatingRequest request
     ) {
+        AuthenticatedUser.requireOwn(jwt, request.userId());
+
         return ResponseEntity.ok(
                 musicRatingService.saveOrUpdateRating(request)
         );
@@ -37,10 +45,13 @@ public class MusicUserActionsController {
 
     @GetMapping("/ratings/user/{userId}")
     public ResponseEntity<Double> getUserRating(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") UUID suppliedUserId,
             @RequestParam String spotifyId,
             @RequestParam MusicContentType contentType
     ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         return ResponseEntity.ok(
                 musicRatingService.getUserRating(
                         userId,
@@ -52,8 +63,11 @@ public class MusicUserActionsController {
 
     @PostMapping("/favorites")
     public ResponseEntity<MusicFavorite> addFavorite(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody MusicFavoriteRequest request
     ) {
+        AuthenticatedUser.requireOwn(jwt, request.userId());
+
         return ResponseEntity.ok(
                 musicFavoriteService.addFavorite(request)
         );
@@ -61,10 +75,13 @@ public class MusicUserActionsController {
 
     @DeleteMapping("/favorites")
         public ResponseEntity<Void> removeFavorite(
-                @RequestParam Long userId,
+                @AuthenticationPrincipal Jwt jwt,
+                @RequestParam(name = "userId", required = false) UUID suppliedUserId,
                 @RequestParam String spotifyId,
                 @RequestParam MusicContentType contentType
         ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         musicFavoriteService.removeFavorite(
                 userId,
                 spotifyId,
@@ -76,10 +93,13 @@ public class MusicUserActionsController {
 
     @GetMapping("/favorites/user/{userId}")
         public ResponseEntity<Boolean> isFavorite(
-                @PathVariable Long userId,
+                @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("userId") UUID suppliedUserId,
                 @RequestParam String spotifyId,
                 @RequestParam MusicContentType contentType
         ) {
+        UUID userId = AuthenticatedUser.requireOwn(jwt, suppliedUserId);
+
         return ResponseEntity.ok(
                 musicFavoriteService.isFavorite(
                         userId,

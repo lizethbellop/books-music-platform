@@ -40,7 +40,7 @@ class ForgotPasswordControllerTest {
 
         // ARRANGE: Simulación del envío de correo de recuperación
         when(forgotPasswordService.sendResetPasswordEmail(any()))
-                .thenReturn(new MessageResponseDto("Correo de recuperación enviado exitosamente."));
+                .thenReturn(new MessageResponseDto("Si existe una cuenta con ese correo, recibirás instrucciones para restablecer tu contraseña."));
 
         String json = """
                 {
@@ -55,6 +55,6 @@ class ForgotPasswordControllerTest {
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Correo de recuperación enviado exitosamente."));
+                .andExpect(jsonPath("$.message").value("Si existe una cuenta con ese correo, recibirás instrucciones para restablecer tu contraseña."));
     }
 }
