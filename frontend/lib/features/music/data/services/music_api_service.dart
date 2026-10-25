@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import '../../../../core/network/review_usernames.dart';
-
 import 'package:http/http.dart' as http;
 
+import '../../../../core/config/api_config.dart';
+import '../../../../core/network/review_usernames.dart';
 import '../../../../core/network/authenticated_api_client.dart';
 
 import '../models/music_detail.dart';
@@ -21,10 +21,7 @@ class MusicApiService {
          getAccessToken: getAccessToken,
        );
 
-  static const String baseUrl = String.fromEnvironment(
-    'MUSIC_API_URL',
-    defaultValue: 'http://localhost:8080/api/music',
-  );
+  static const String baseUrl = ApiConfig.musicUrl;
 
   Future<List<MusicSearchItem>> searchMusic(String query) async {
     final uri = Uri.parse('$baseUrl/search?q=${Uri.encodeComponent(query)}');

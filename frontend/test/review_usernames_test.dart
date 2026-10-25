@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:frontend/core/config/api_config.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -21,6 +23,7 @@ void main() {
           calls++;
           expect(request.url.path, '/api/v1/users/usernames');
           expect(request.url.queryParameters['ids'], id);
+          expect(request.url.origin, ApiConfig.gatewayUrl);
           expect(request.headers['Authorization'], 'Bearer access');
           return http.Response(jsonEncode({id: 'liz_bello'}), 200);
         }),
