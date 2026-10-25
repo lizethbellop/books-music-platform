@@ -16,10 +16,10 @@ la misma asignación en sus propias computadoras:
 | Books Service | 8081 | `http://localhost:8081/books` |
 | Profile Service | 8082 | `http://localhost:8082/api/profiles` |
 | Users Service | 8083 | `http://localhost:8083` |
-| Social Service (reservado) | 8084 | `http://localhost:8084` |
-| Communities Service (reservado) | 8085 | `http://localhost:8085` |
-| Chat Service (reservado) | 8086 | `http://localhost:8086` |
-| Recommendations Service (reservado) | 8087 | `http://localhost:8087` |
+| Social Service (reservado) | 8085 | `http://localhost:8084` |
+| Communities Service (reservado) | 8086 | `http://localhost:8085` |
+| Chat Service (reservado) | 8087 | `http://localhost:8086` |
+| Recommendations Service (reservado) | 8088 | `http://localhost:8087` |
 
 PostgreSQL puede permanecer en el puerto `5432` para todos los servicios. No
 hay conflicto porque cada servicio usa una base de datos diferente.
