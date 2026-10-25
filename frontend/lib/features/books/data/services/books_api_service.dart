@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import '../../../../core/network/review_usernames.dart';
-
 import 'package:http/http.dart' as http;
 
+import '../../../../core/config/api_config.dart';
+import '../../../../core/network/review_usernames.dart';
 import '../../../../core/network/authenticated_api_client.dart';
 
 import '../models/book_detail.dart';
@@ -23,10 +23,7 @@ class BooksApiService {
          getAccessToken: getAccessToken,
        );
 
-  static const String baseUrl = String.fromEnvironment(
-    'BOOKS_API_URL',
-    defaultValue: 'http://localhost:8081/books',
-  );
+  static const String baseUrl = ApiConfig.booksUrl;
 
   Future<List<BookSearchItem>> searchBooks(String query) async {
     final uri = Uri.parse('$baseUrl/search?q=${Uri.encodeComponent(query)}');

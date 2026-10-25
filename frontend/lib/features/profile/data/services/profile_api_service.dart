@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import '../../../../core/config/api_config.dart';
+
 import '../../../auth/data/services/auth_session_manager.dart';
 import '../exceptions/profile_api_exception.dart';
 import '../models/profile_model.dart';
@@ -19,10 +21,7 @@ import '../models/add_list_element_request.dart';
 import '../models/list_element_model.dart';
 
 class ProfileApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'PROFILE_API_URL',
-    defaultValue: 'http://localhost:8082/api/profiles',
-  );
+  static const String baseUrl = ApiConfig.profileUrl;
 
   Future<Map<String, String>> _authenticatedHeaders({
     bool jsonBody = false,

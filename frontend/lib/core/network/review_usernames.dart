@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../config/api_config.dart';
+
 import '../../features/auth/data/services/auth_session_manager.dart';
 
 /// Resolves public author names in batches without exposing email or role.
@@ -24,14 +26,7 @@ Future<List<Map<String, dynamic>>> resolveReviewUsernames(
   if (session != null && session.username.isNotEmpty) {
     names[session.userId] = session.username;
   }
-  const authUrl = String.fromEnvironment(
-    'AUTH_API_URL',
-    defaultValue: 'http://localhost:8083/api/v1/auth',
-  );
-  final endpoint = Uri.parse(authUrl).replace(
-    path: Uri.parse(authUrl).path
-        .replaceFirst(RegExp(r'/auth/?$'), '/users/usernames'),
-  );
+  final endpoint = Uri.parse(ApiConfig.usernamesUrl);
   for (var start = 0; start < ids.length; start += 100) {
     final batch = ids.skip(start).take(100).join(',');
     try {

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:frontend/core/config/api_config.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -17,6 +19,7 @@ void main() {
       final api = BooksApiService(
         getAccessToken: () async => 'current-token',
         client: MockClient((request) async {
+          expect(request.url.origin, ApiConfig.gatewayUrl);
           expect(request.headers['Authorization'], 'Bearer current-token');
           expect(request.url.queryParameters['userId'], userId);
           paths.add(request.url.path);
@@ -33,6 +36,7 @@ void main() {
     final api = BooksApiService(
       getAccessToken: () async => 'current-token',
       client: MockClient((request) async {
+        expect(request.url.origin, ApiConfig.gatewayUrl);
         expect(request.headers['Authorization'], 'Bearer current-token');
         expect(request.url.queryParameters['userId'], userId);
         expect(jsonDecode(request.body), {'status': 'LEYENDO'});
@@ -50,6 +54,7 @@ void main() {
     final api = MusicApiService(
       getAccessToken: () async => 'current-token',
       client: MockClient((request) async {
+        expect(request.url.origin, ApiConfig.gatewayUrl);
         expect(request.headers['Authorization'], 'Bearer current-token');
         expect(request.url.path, '/api/music/reviews/user/$userId/reviewed');
         return http.Response('[]', 200);

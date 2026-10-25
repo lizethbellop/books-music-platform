@@ -74,14 +74,18 @@ cd D:\books-music-platform\frontend
 flutter run -d edge --web-port 3000
 ```
 
-También se pueden indicar las tres APIs explícitamente:
+El frontend envía las solicitudes al Gateway en `http://localhost:8084`.
+Debe estar iniciado y reenviar las rutas existentes a los cuatro servicios.
+Para cambiar su dirección, usa un único origen sin barra final ni rutas:
 
 ```powershell
 flutter run -d edge --web-port 3000 `
-  --dart-define=MUSIC_API_URL=http://localhost:8080/api/music `
-  --dart-define=BOOKS_API_URL=http://localhost:8081/books `
-  --dart-define=PROFILE_API_URL=http://localhost:8082/api/profiles
+  --dart-define=GATEWAY_URL=http://localhost:8084
 ```
+
+Consulta [la guía de integración del Gateway](docs/API_GATEWAY.md) para las rutas,
+JWT y comprobaciones. Las opciones anteriores `AUTH_API_URL`, `BOOKS_API_URL`,
+`MUSIC_API_URL` y `PROFILE_API_URL` ya no configuran el frontend.
 
 ## Iniciar los servicios en macOS o Linux
 

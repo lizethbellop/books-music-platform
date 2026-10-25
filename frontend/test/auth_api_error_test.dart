@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:frontend/features/auth/data/models/login_request_model.dart';
@@ -8,13 +9,15 @@ import 'package:frontend/features/auth/data/services/auth_api_service.dart';
 
 void main() {
   AuthApiService api(String body, int status) => AuthApiService(
-    client: MockClient(
-      (_) async => http.Response(
+    client: MockClient((request) async {
+      expect(request.url.origin, ApiConfig.gatewayUrl);
+      expect(request.url.path, startsWith('/api/v1/auth/'));
+      return http.Response(
         body,
         status,
         headers: {'content-type': 'application/json; charset=utf-8'},
-      ),
-    ),
+      );
+    }),
   );
   Matcher failure(int status, String message) => isA<AuthApiException>()
       .having((e) => e.statusCode, 'status', status)
