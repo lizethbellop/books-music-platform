@@ -13,7 +13,11 @@ import 'music_detail_page.dart';
 
 class MusicHomePage extends StatefulWidget {
   final String userId;
-  const MusicHomePage({super.key, required this.userId});
+
+  const MusicHomePage({
+    super.key,
+    required this.userId,
+  });
 
   @override
   State<MusicHomePage> createState() => _MusicHomePageState();
@@ -28,11 +32,25 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   List<MusicItem> _reviewedMusic = [];
 
+  String _selectedFilter = 'ALL';
+
   bool _isLoading = false;
   bool _hasSearched = false;
   bool _isLoadingReviewedMusic = true;
 
   String? _errorMessage;
+
+  List<MusicSearchItem> get _filteredSearchResults {
+    if (_selectedFilter == 'ALL') {
+      return _searchResults;
+    }
+
+    return _searchResults
+        .where(
+          (item) => item.contentType == _selectedFilter,
+        )
+        .toList();
+  }
 
   @override
   void initState() {
@@ -42,7 +60,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   Future<void> _loadReviewedMusic() async {
     try {
-      final reviewed = await _musicApiService.getReviewedMusic(userId: widget.userId);
+      final reviewed = await _musicApiService.getReviewedMusic(
+        userId: widget.userId,
+      );
 
       if (!mounted) return;
 
@@ -103,6 +123,12 @@ class _MusicHomePageState extends State<MusicHomePage> {
     }
   }
 
+  void _selectFilter(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,7 +142,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Música', style: AppTextStyles.pageTitle),
+              Text(
+                'Música',
+                style: AppTextStyles.pageTitle,
+              ),
 
               const SizedBox(height: 24),
 
@@ -126,26 +155,54 @@ class _MusicHomePageState extends State<MusicHomePage> {
                 onSubmitted: (_) => _searchMusic(),
                 decoration: InputDecoration(
                   hintText: 'Buscar canciones, álbumes o artistas...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.ink),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.ink,
+                  ),
                   suffixIcon: IconButton(
                     onPressed: _searchMusic,
-                    icon: const Icon(Icons.arrow_forward, color: AppColors.ink),
+                    icon: const Icon(
+                      Icons.arrow_forward,
+                      color: AppColors.ink,
+                    ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 18),
 
-              const Wrap(
+              Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  MusicFilterChip(label: 'Todo', selected: true),
-                  MusicFilterChip(label: 'Artistas'),
-                  MusicFilterChip(label: 'Álbumes'),
-                  MusicFilterChip(label: 'Canciones'),
-                  MusicFilterChip(label: 'Playlists'),
-                  MusicFilterChip(label: 'Géneros'),
+                  MusicFilterChip(
+                    label: 'Todo',
+                    selected: _selectedFilter == 'ALL',
+                    onTap: () {
+                      _selectFilter('ALL');
+                    },
+                  ),
+                  MusicFilterChip(
+                    label: 'Artistas',
+                    selected: _selectedFilter == 'ARTIST',
+                    onTap: () {
+                      _selectFilter('ARTIST');
+                    },
+                  ),
+                  MusicFilterChip(
+                    label: 'Álbumes',
+                    selected: _selectedFilter == 'ALBUM',
+                    onTap: () {
+                      _selectFilter('ALBUM');
+                    },
+                  ),
+                  MusicFilterChip(
+                    label: 'Canciones',
+                    selected: _selectedFilter == 'SONG',
+                    onTap: () {
+                      _selectFilter('SONG');
+                    },
+                  ),
                 ],
               ),
 
@@ -181,7 +238,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               if (_isLoadingReviewedMusic)
                 const Center(
-                  child: CircularProgressIndicator(color: AppColors.lavender),
+                  child: CircularProgressIndicator(
+                    color: AppColors.lavender,
+                  ),
                 )
               else if (_reviewedMusic.isEmpty)
                 Text(
@@ -195,7 +254,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
                     children: _reviewedMusic
                         .map(
                           (item) => Padding(
-                            padding: const EdgeInsets.only(right: 16),
+                            padding: const EdgeInsets.only(
+                              right: 16,
+                            ),
                             child: MusicCard(
                               userId: widget.userId,
                               item: item,
@@ -245,69 +306,6 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               const _ExploreGrid(),
 
-              const SizedBox(height: 42),
-
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Artistas que podrías seguir',
-                        style: AppTextStyles.sectionTitle,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Conecta con personas que comparten tus gustos.',
-                        style: AppTextStyles.secondary,
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Ver más  →',
-                      style: AppTextStyles.button.copyWith(
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-
-              const Wrap(
-                spacing: 28,
-                runSpacing: 18,
-                children: [
-                  _ArtistSuggestion(
-                    name: 'Phoebe Bridgers',
-                    followers: '2.1 M seguidores',
-                  ),
-                  _ArtistSuggestion(
-                    name: 'Billie Eilish',
-                    followers: '6.3 M seguidores',
-                  ),
-                  _ArtistSuggestion(
-                    name: 'Clairo',
-                    followers: '1.8 M seguidores',
-                  ),
-                  _ArtistSuggestion(
-                    name: 'Mac DeMarco',
-                    followers: '3.4 M seguidores',
-                  ),
-                  _ArtistSuggestion(
-                    name: 'Lana Del Rey',
-                    followers: '7.1 M seguidores',
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 40),
             ],
           ),
@@ -321,18 +319,25 @@ class _MusicHomePageState extends State<MusicHomePage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(color: AppColors.lavender),
+          child: CircularProgressIndicator(
+            color: AppColors.lavender,
+          ),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Text(_errorMessage!, style: AppTextStyles.secondary);
+      return Text(
+        _errorMessage!,
+        style: AppTextStyles.secondary,
+      );
     }
 
-    if (_searchResults.isEmpty) {
+    if (_filteredSearchResults.isEmpty) {
       return Text(
-        'No se encontraron resultados',
+        _selectedFilter == 'ALL'
+            ? 'No se encontraron resultados'
+            : 'No se encontraron resultados para este filtro',
         style: AppTextStyles.secondary,
       );
     }
@@ -340,9 +345,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(
+        _SectionTitle(
           title: 'Resultados',
-          subtitle: 'Contenido encontrado en Spotify',
+          subtitle: _filterSubtitle(),
         ),
 
         const SizedBox(height: 16),
@@ -354,15 +359,15 @@ class _MusicHomePageState extends State<MusicHomePage> {
             final columns = width >= 1000
                 ? 4
                 : width >= 650
-                ? 3
-                : width >= 420
-                ? 2
-                : 1;
+                    ? 3
+                    : width >= 420
+                        ? 2
+                        : 1;
 
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _searchResults.length,
+              itemCount: _filteredSearchResults.length,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
                 crossAxisSpacing: 16,
@@ -370,7 +375,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
                 childAspectRatio: 0.72,
               ),
               itemBuilder: (context, index) {
-                return _SearchResultCard(item: _searchResults[index], userId: widget.userId);
+                return _SearchResultCard(
+                  item: _filteredSearchResults[index],
+                  userId: widget.userId,
+                );
               },
             );
           },
@@ -378,22 +386,40 @@ class _MusicHomePageState extends State<MusicHomePage> {
       ],
     );
   }
+
+  String _filterSubtitle() {
+    return switch (_selectedFilter) {
+      'ARTIST' => 'Artistas encontrados en Spotify',
+      'ALBUM' => 'Álbumes encontrados en Spotify',
+      'SONG' => 'Canciones encontradas en Spotify',
+      _ => 'Contenido encontrado en Spotify',
+    };
+  }
 }
 
 class _SectionTitle extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionTitle({required this.title, required this.subtitle});
+  const _SectionTitle({
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AppTextStyles.sectionTitle),
+        Text(
+          title,
+          style: AppTextStyles.sectionTitle,
+        ),
         const SizedBox(height: 4),
-        Text(subtitle, style: AppTextStyles.secondary),
+        Text(
+          subtitle,
+          style: AppTextStyles.secondary,
+        ),
       ],
     );
   }
@@ -438,8 +464,8 @@ class _ExploreGrid extends StatelessWidget {
         final columns = width >= 1100
             ? 4
             : width >= 650
-            ? 2
-            : 1;
+                ? 2
+                : 1;
 
         return GridView.count(
           shrinkWrap: true,
@@ -459,7 +485,10 @@ class _SearchResultCard extends StatelessWidget {
   final String userId;
   final MusicSearchItem item;
 
-  const _SearchResultCard({required this.item, required this.userId});
+  const _SearchResultCard({
+    required this.item,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -473,7 +502,10 @@ class _SearchResultCard extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) {
-                return MusicDetailPage(item: item, userId: userId);
+                return MusicDetailPage(
+                  item: item,
+                  userId: userId,
+                );
               },
             ),
           );
@@ -518,7 +550,10 @@ class _SearchResultCard extends StatelessWidget {
 
               const SizedBox(height: 6),
 
-              Text(_typeText(item.contentType), style: AppTextStyles.secondary),
+              Text(
+                _typeText(item.contentType),
+                style: AppTextStyles.secondary,
+              ),
             ],
           ),
         ),
@@ -544,57 +579,11 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       color: AppColors.lilac,
       child: const Center(
-        child: Icon(Icons.music_note, size: 44, color: AppColors.ink),
-      ),
-    );
-  }
-}
-
-class _ArtistSuggestion extends StatelessWidget {
-  final String name;
-  final String followers;
-
-  const _ArtistSuggestion({required this.name, required this.followers});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 220,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.warmWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 25,
-            backgroundColor: AppColors.sage,
-            child: Icon(Icons.person_outline, color: AppColors.warmWhite),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.cardTitle,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  followers,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.secondary,
-                ),
-              ],
-            ),
-          ),
-        ],
+        child: Icon(
+          Icons.music_note,
+          size: 44,
+          color: AppColors.ink,
+        ),
       ),
     );
   }
