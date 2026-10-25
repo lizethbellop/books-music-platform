@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../../core/config/api_config.dart';
+
 import '../models/auth_response_model.dart';
 import '../models/forgot_password_request_model.dart';
 import '../models/login_request_model.dart';
@@ -22,17 +24,12 @@ class AuthApiException implements Exception {
 }
 
 class AuthApiService {
-  // URL base del backend Spring Boot
+  // URL del Gateway; se permite inyectarla en pruebas.
   final String baseUrl;
   final http.Client _client;
 
-  AuthApiService({
-    this.baseUrl = const String.fromEnvironment(
-      'AUTH_API_URL',
-      defaultValue: 'http://localhost:8083/api/v1/auth',
-    ),
-    http.Client? client,
-  }) : _client = client ?? http.Client();
+  AuthApiService({this.baseUrl = ApiConfig.authUrl, http.Client? client})
+    : _client = client ?? http.Client();
 
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
