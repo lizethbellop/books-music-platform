@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record PersonalStatisticsResponse(
         UUID userId,
-        MusicStatisticsResponse music
+        MusicStatisticsResponse music,
+        BookStatisticsResponse books
 ) {
 }
