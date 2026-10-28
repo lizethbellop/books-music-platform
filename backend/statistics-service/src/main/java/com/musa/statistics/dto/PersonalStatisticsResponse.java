@@ -5,6 +5,7 @@ import java.util.UUID;
 public record PersonalStatisticsResponse(
         UUID userId,
         MusicStatisticsResponse music,
-        BookStatisticsResponse books
+        BookStatisticsResponse books,
+        ProfileStatisticsResponse profile
 ) {
 }
