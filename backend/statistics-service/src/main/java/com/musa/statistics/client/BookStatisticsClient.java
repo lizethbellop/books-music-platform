@@ -1,10 +1,13 @@
 package com.musa.statistics.client;
 
 import com.musa.statistics.dto.BookStatisticsResponse;
+import com.musa.statistics.dto.GlobalBookStatisticsResponse;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import com.musa.statistics.dto.GlobalBookStatisticsResponse;
 
 @Component
 public class BookStatisticsClient {
@@ -33,4 +36,18 @@ public class BookStatisticsClient {
                 .retrieve()
                 .body(BookStatisticsResponse.class);
     }
+
+    public GlobalBookStatisticsResponse getGlobalStatistics(
+                String authorizationHeader
+        ) {
+        return restClient
+                .get()
+                .uri("/books/statistics/global")
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        authorizationHeader
+                )
+                .retrieve()
+                .body(GlobalBookStatisticsResponse.class);
+        }
 }
