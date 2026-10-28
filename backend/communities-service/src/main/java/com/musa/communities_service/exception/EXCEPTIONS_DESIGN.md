@@ -52,11 +52,9 @@ Todas las respuestas de error retornadas por el microservicio utilizan la estruc
 | `timestamp` | `OffsetDateTime` | Marca de tiempo exacta en la que se generó la excepción, formateada en ISO-8601 UTC (`ZoneOffset.UTC`).                                      |
 | `details`   | `Liststring`     | Lista opcional de detalles específicos. Se utiliza en errores de validación`@Valid` para desglosar el campo con error y la regla incumplida. |
 
-### 
 
-### 
 
-Matriz de Trazabilidad: Excepciones vs. Casos de Uso
+### Matriz de Trazabilidad: Excepciones vs. Casos de Uso
 
 
 | Excepción / Evento                                                           | Código HTTP                                                                                                                                                               | Caso de Uso                  | Flujo / Excepción Cubierta | Descripción y Causa de Activación                                                                                                                                                 |
