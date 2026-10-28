@@ -26,4 +26,10 @@ public interface MusicRatingRepository
     Double findAverageRatingByUserId(
             @Param("userId") UUID userId
     );
+
+    @Query("""
+            SELECT AVG(r.rating)
+            FROM MusicRating r
+            """)
+    Double findGlobalAverageRating();
 }
