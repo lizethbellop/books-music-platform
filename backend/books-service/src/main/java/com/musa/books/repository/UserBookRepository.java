@@ -23,4 +23,8 @@ public interface UserBookRepository extends JpaRepository<UserBook, UUID> {
             UUID userId,
             ReadingStatus readingStatus
     );
+
+    long countByReadingStatus(
+            ReadingStatus readingStatus
+    );
 }

@@ -28,4 +28,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     BigDecimal findAverageRatingByUserId(
             @Param("userId") UUID userId
     );
+
+    @Query("""
+            SELECT AVG(r.rating)
+            FROM Review r
+            """)
+    BigDecimal findGlobalAverageRating();
 }
