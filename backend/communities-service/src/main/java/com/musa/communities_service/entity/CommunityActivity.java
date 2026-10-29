@@ -50,11 +50,16 @@ public class CommunityActivity {
     protected CommunityActivity() {
     }
 
-    public CommunityActivity(Community community, UUID createdBy, String title, OffsetDateTime startsAt) {
+    public CommunityActivity(Community community, UUID createdBy, String title, String description,
+                             String location, OffsetDateTime startsAt, OffsetDateTime endsAt, ActivityStatus status) {
         this.community = community;
         this.createdBy = createdBy;
         this.title = title;
+        this.description = description;
+        this.location = location;
         this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.status = status;
     }
 
     @PrePersist

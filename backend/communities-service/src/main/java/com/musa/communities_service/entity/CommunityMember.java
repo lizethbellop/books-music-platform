@@ -42,10 +42,11 @@ public class CommunityMember {
     protected CommunityMember() {
     }
 
-    public CommunityMember(Community community, UUID userId, MemberRole role) {
+    public CommunityMember(Community community, UUID userId, MemberRole role, MemberStatus status) {
         this.community = community;
         this.userId = userId;
         this.role = role;
+        this.status = status;
     }
 
     @PrePersist
@@ -90,6 +91,10 @@ public class CommunityMember {
 
     public OffsetDateTime getJoinedAt() {
         return joinedAt;
+    }
+
+    public void setJoinedAt(OffsetDateTime joinedAt) {
+        this.joinedAt = joinedAt;
     }
 
     public MemberStatus getStatus() {
