@@ -6,8 +6,10 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/books/presentation/pages/books_home_page.dart';
 import '../../features/music/presentation/pages/music_home_page.dart';
+import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../shared/models/musa_destination.dart';
 import '../../shared/widgets/musa_navigation_shell.dart';
+
 export 'app_section.dart';
 
 /// The single owner of application navigation on every platform.
@@ -16,13 +18,21 @@ class AppShell extends StatefulWidget {
     'MUSA_USER_ID',
     defaultValue: '550e8400-e29b-41d4-a716-446655440000',
   );
+
   final String userId;
   final AppSection initialSection;
+
+  /// Permite sustituir la pantalla de estadísticas durante pruebas.
+  /// En ejecución normal se utiliza StatisticsPage.
+  final Widget? statisticsPage;
+
   const AppShell({
     super.key,
     this.userId = defaultUserId,
     this.initialSection = AppSection.home,
+    this.statisticsPage,
   });
+
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -30,50 +40,77 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late AppSection _section = widget.initialSection;
   Key _navigationKey = UniqueKey();
-  void _select(AppSection section) => setState(() => _section = section);
+
+  void _select(AppSection section) {
+    setState(() => _section = section);
+  }
 
   Widget _page() => switch (_section) {
-    AppSection.home => HomePage(userId: widget.userId, embedded: true),
-    AppSection.music => MusicHomePage(userId: widget.userId),
-    AppSection.books => BooksHomePage(userId: widget.userId),
+    AppSection.home => HomePage(
+      userId: widget.userId,
+      embedded: true,
+    ),
+
+    AppSection.music => MusicHomePage(
+      userId: widget.userId,
+    ),
+
+    AppSection.books => BooksHomePage(
+      userId: widget.userId,
+    ),
+
     AppSection.profile => ProfilePage(
       userId: widget.userId,
       embedded: true,
-      onProfileUpdated: () => setState(() => _navigationKey = UniqueKey()),
+      onProfileUpdated: () {
+        setState(() => _navigationKey = UniqueKey());
+      },
     ),
+
+    AppSection.statistics =>
+      widget.statisticsPage ?? const StatisticsPage(),
+
     _ => Center(
       child: Text(
         '${switch (_section) {
           AppSection.explore => 'Explorar',
           AppSection.social => 'Social',
           AppSection.communities => 'Comunidades',
-          _ => 'Estadísticas',
+          _ => 'Pendiente',
         }} — pendiente',
-        style: const TextStyle(color: AppColors.ink),
+        style: const TextStyle(
+          color: AppColors.ink,
+        ),
       ),
     ),
   };
 
   @override
-  Widget build(BuildContext context) => MusaNavigationShell(
-    key: _navigationKey,
-    userId: widget.userId,
-    selectedSection: _section,
-    onSectionSelected: _select,
-    selectedDestination: switch (_section) {
-      AppSection.music => MusaDestination.music,
-      AppSection.books => MusaDestination.books,
-      AppSection.profile => MusaDestination.profile,
-      AppSection.explore => MusaDestination.explore,
-      _ => MusaDestination.home,
-    },
-    onDestinationSelected: (destination) => _select(switch (destination) {
-      MusaDestination.home => AppSection.home,
-      MusaDestination.explore => AppSection.explore,
-      MusaDestination.music => AppSection.music,
-      MusaDestination.books => AppSection.books,
-      MusaDestination.profile => AppSection.profile,
-    }),
-    child: _page(),
-  );
+  Widget build(BuildContext context) {
+    return MusaNavigationShell(
+      key: _navigationKey,
+      userId: widget.userId,
+      selectedSection: _section,
+      onSectionSelected: _select,
+      selectedDestination: switch (_section) {
+        AppSection.music => MusaDestination.music,
+        AppSection.books => MusaDestination.books,
+        AppSection.profile => MusaDestination.profile,
+        AppSection.explore => MusaDestination.explore,
+        _ => MusaDestination.home,
+      },
+      onDestinationSelected: (destination) {
+        _select(
+          switch (destination) {
+            MusaDestination.home => AppSection.home,
+            MusaDestination.explore => AppSection.explore,
+            MusaDestination.music => AppSection.music,
+            MusaDestination.books => AppSection.books,
+            MusaDestination.profile => AppSection.profile,
+          },
+        );
+      },
+      child: _page(),
+    );
+  }
 }

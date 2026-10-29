@@ -9,5 +9,6 @@ abstract final class ApiConfig {
   static const String booksUrl = '$gatewayUrl/books';
   static const String musicUrl = '$gatewayUrl/api/music';
   static const String profileUrl = '$gatewayUrl/api/profiles';
+  static const String statisticsUrl = '$gatewayUrl/api/statistics';
   static const String usernamesUrl = '$gatewayUrl/api/v1/users/usernames';
 }

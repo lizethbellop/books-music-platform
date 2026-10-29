@@ -6,77 +6,198 @@ import 'package:frontend/shared/widgets/musa_sidebar.dart';
 import 'package:frontend/shared/widgets/musa_bottom_navigation.dart';
 
 void main() {
-  testWidgets('Desktop has exactly one light sidebar and reachable sections', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1366, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MaterialApp(home: AppShell()));
-    await tester.pump();
-    expect(find.byType(MusaSidebar), findsOneWidget);
-    final container = tester.widget<Container>(
-      find
-          .descendant(
+  testWidgets(
+    'Desktop has exactly one light sidebar and reachable sections',
+    (tester) async {
+      tester.view.physicalSize = const Size(1366, 900);
+      tester.view.devicePixelRatio = 1;
+
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AppShell(
+            statisticsPage: SizedBox(
+              key: Key('statistics-test-page'),
+              child: Text('Estadísticas de prueba'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        find.byType(MusaSidebar),
+        findsOneWidget,
+      );
+
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(MusaSidebar),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+
+      expect(
+        (container.decoration as BoxDecoration).color,
+        AppColors.warmWhite,
+      );
+
+      for (final name in [
+        'Música',
+        'Libros',
+        'Mi perfil',
+        'Social',
+        'Comunidades',
+        'Estadísticas',
+        'Inicio',
+      ]) {
+        await tester.tap(
+          find.descendant(
             of: find.byType(MusaSidebar),
-            matching: find.byType(Container),
-          )
-          .first,
-    );
-    expect((container.decoration as BoxDecoration).color, AppColors.warmWhite);
-    for (final name in [
-      'Música',
-      'Libros',
-      'Mi perfil',
-      'Social',
-      'Comunidades',
-      'Estadísticas',
-      'Inicio',
-    ]) {
+            matching: name == 'Mi perfil'
+                ? find.byTooltip('Mi perfil')
+                : find.text(name),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(
+          const Duration(milliseconds: 400),
+        );
+
+        expect(
+          find.byType(MusaSidebar),
+          findsOneWidget,
+          reason: name,
+        );
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: name,
+        );
+      }
+
+      // Comprobamos específicamente que Statistics
+      // pueda ser sustituido durante pruebas sin hacer HTTP.
       await tester.tap(
         find.descendant(
           of: find.byType(MusaSidebar),
-          matching: name == 'Mi perfil'
-              ? find.byTooltip('Mi perfil')
-              : find.text(name),
+          matching: find.text('Estadísticas'),
         ),
       );
+
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(MusaSidebar), findsOneWidget, reason: name);
-      expect(tester.takeException(), isNull, reason: name);
-    }
-  });
+
+      expect(
+        find.byKey(
+          const Key('statistics-test-page'),
+        ),
+        findsOneWidget,
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+      );
+    },
+  );
 
   testWidgets(
     'Mobile uses only bottom navigation without a top bar or drawer',
     (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
+      tester.view.physicalSize =
+          const Size(390, 844);
+
       tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(const MaterialApp(home: AppShell()));
+
+      addTearDown(
+        tester.view.resetPhysicalSize,
+      );
+
+      addTearDown(
+        tester.view.resetDevicePixelRatio,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AppShell(),
+        ),
+      );
+
       await tester.pump();
-      expect(find.byType(MusaBottomNavigation), findsOneWidget);
-      expect(find.byType(MusaSidebar), findsNothing);
-      for (final name in ['Explorar', 'Música', 'Libros', 'Perfil', 'Inicio']) {
+
+      expect(
+        find.byType(MusaBottomNavigation),
+        findsOneWidget,
+      );
+
+      expect(
+        find.byType(MusaSidebar),
+        findsNothing,
+      );
+
+      for (final name in [
+        'Explorar',
+        'Música',
+        'Libros',
+        'Perfil',
+        'Inicio',
+      ]) {
         await tester.tap(
           find.descendant(
             of: find.byType(MusaBottomNavigation),
             matching: find.text(name),
           ),
         );
+
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(tester.takeException(), isNull, reason: name);
+
+        await tester.pump(
+          const Duration(milliseconds: 400),
+        );
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: name,
+        );
       }
-      expect(find.byType(AppBar), findsNothing);
-      expect(find.byType(Drawer), findsNothing);
-      expect(find.byIcon(Icons.menu), findsNothing);
-      expect(find.byType(MusaSidebar), findsNothing);
-      expect(find.byType(MusaBottomNavigation), findsOneWidget);
-      expect(tester.takeException(), isNull);
+
+      expect(
+        find.byType(AppBar),
+        findsNothing,
+      );
+
+      expect(
+        find.byType(Drawer),
+        findsNothing,
+      );
+
+      expect(
+        find.byIcon(Icons.menu),
+        findsNothing,
+      );
+
+      expect(
+        find.byType(MusaSidebar),
+        findsNothing,
+      );
+
+      expect(
+        find.byType(MusaBottomNavigation),
+        findsOneWidget,
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+      );
     },
   );
 }
