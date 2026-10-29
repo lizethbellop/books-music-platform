@@ -26,6 +26,11 @@ spring:
               predicates:
                 - Path=/api/music/**
 
+            - id: statistics-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/statistics/**
+
             - id: profile-service
               uri: http://localhost:8082
               predicates:
