@@ -22,10 +22,15 @@ class AppShell extends StatefulWidget {
   final String userId;
   final AppSection initialSection;
 
+  /// Permite sustituir la pantalla de estadísticas durante pruebas.
+  /// En ejecución normal se utiliza StatisticsPage.
+  final Widget? statisticsPage;
+
   const AppShell({
     super.key,
     this.userId = defaultUserId,
     this.initialSection = AppSection.home,
+    this.statisticsPage,
   });
 
   @override
@@ -62,7 +67,8 @@ class _AppShellState extends State<AppShell> {
       },
     ),
 
-    AppSection.statistics => const StatisticsPage(),
+    AppSection.statistics =>
+      widget.statisticsPage ?? const StatisticsPage(),
 
     _ => Center(
       child: Text(
