@@ -53,6 +53,7 @@ public class Community {
         this.type = type;
         this.visibility = visibility;
         this.createdBy = createdBy;
+        this.status = CommunityStatus.ACTIVA;
     }
 
     @PrePersist
