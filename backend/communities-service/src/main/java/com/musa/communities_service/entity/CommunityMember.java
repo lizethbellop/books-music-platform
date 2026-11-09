@@ -46,6 +46,7 @@ public class CommunityMember {
         this.community = community;
         this.userId = userId;
         this.role = role;
+
         this.status = status;
     }
 
