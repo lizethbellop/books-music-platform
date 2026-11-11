@@ -13,6 +13,15 @@ public interface PreferenceElementRepository
 
     List<PreferenceElement> findByPreferenceId(UUID preferenceId);
 
+    @org.springframework.data.jpa.repository.Query("""
+            select distinct e.referenceId from PreferenceElement e
+            where e.elementType = 'BOOK' and e.preferenceId in
+                (select p.id from Preference p where p.profileId = :profileId)
+            order by e.referenceId
+            """)
+    List<String> findBookReferencesByProfileId(
+            @org.springframework.data.repository.query.Param("profileId") UUID profileId);
+
     boolean existsByPreferenceIdAndElementTypeAndReferenceId(
             UUID preferenceId,
             String elementType,

@@ -49,6 +49,7 @@ class _AppShellState extends State<AppShell> {
     AppSection.home => HomePage(
       userId: widget.userId,
       embedded: true,
+      onOpenLists: () => _select(AppSection.profile),
     ),
 
     AppSection.music => MusicHomePage(
@@ -58,7 +59,6 @@ class _AppShellState extends State<AppShell> {
     AppSection.books => BooksHomePage(
       userId: widget.userId,
     ),
-
     AppSection.profile => ProfilePage(
       userId: widget.userId,
       embedded: true,

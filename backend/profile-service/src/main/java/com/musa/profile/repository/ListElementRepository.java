@@ -13,6 +13,14 @@ public interface ListElementRepository
 
     List<ListElement> findByListId(UUID listId);
 
+    @Query("""
+            select distinct e.referenceId from ListElement e
+            where e.elementType = 'BOOK' and e.listId in
+                (select l.id from UserList l where l.profileId = :profileId)
+            order by e.referenceId
+            """)
+    List<String> findBookReferencesByProfileId(@Param("profileId") UUID profileId);
+
     boolean existsByListIdAndElementTypeAndReferenceId(
             UUID listId,
             String elementType,

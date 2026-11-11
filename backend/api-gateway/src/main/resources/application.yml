@@ -9,9 +9,21 @@ spring:
     gateway:
       server:
         webflux:
-
           globalcors:
+            add-to-simple-url-handler-mapping: true
             cors-configurations:
+              '[/api/recommendations/**]':
+                allowedOriginPatterns:
+                  - "${MUSA_WEB_ORIGIN:http://localhost:*}"
+                  - "http://127.0.0.1:*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - OPTIONS
+                allowedHeaders:
+                  - Authorization
+                  - Content-Type
+                  - Accept
               '[/**]':
                 allowedOrigins:
                   - "http://localhost:3000"
@@ -54,3 +66,8 @@ spring:
               uri: http://localhost:8082
               predicates:
                 - Path=/api/profiles,/api/profiles/**
+
+            - id: recommendations-service
+              uri: ${RECOMMENDATIONS_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/recommendations/**

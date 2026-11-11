@@ -22,8 +22,8 @@ Mantener esta asignación en los entornos locales del equipo:
 | API Gateway | 8084 | `http://localhost:8084` |
 | Social Service (reservado) | 8085 | `http://localhost:8085` |
 | Communities Service | 8086 | `http://localhost:8086` |
-| Chat Service (reservado) | 8087 | `http://localhost:8087` |
-| Recommendations Service (reservado) | 8088 | `http://localhost:8088` |
+| Chat Service (reservado) | 8088 | `http://localhost:8087` |
+| Recommendations Service (reservado) | 8087 | `http://localhost:8088` |
 
 Una misma instancia de PostgreSQL puede atender las bases de datos de los servicios en el puerto `5432`.
 
@@ -306,3 +306,19 @@ Si el comando no muestra resultados, no se detectó un proceso escuchando en ese
 El frontend centraliza sus URLs y utiliza el Gateway como punto de entrada a los microservicios.
 
 La observabilidad mediante métricas, trazas distribuidas y logs correlacionados queda para una fase posterior.
+
+
+## Recomendaciones de libros en Inicio
+
+Inicio muestra lecturas inspiradas en las listas del perfil, con tarjetas que abren
+el detalle existente de libros. Usa el JWT y Gateway de musa. y el servicio Python
+en el puerto 8085. Ver [integración y arranque](backend/recommendations-service/docs/HOME.md).
+No se agregó una página de recomendaciones ni integración musical en Inicio.
+
+
+## Preferencias después del registro
+
+El registro abre una selección inicial de libros, canciones y artistas, con búsqueda
+en los catálogos existentes. Se guardan juntas en Mi perfil, o se puede omitir.
+Inicio usa los libros de esas preferencias junto con las listas personales.
+Ver [flujo e integración](docs/preferences-onboarding.md).

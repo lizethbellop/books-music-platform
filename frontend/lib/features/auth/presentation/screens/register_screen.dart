@@ -10,6 +10,8 @@ import '../../../../core/theme/app_spacing.dart';
 
 // Models & Services
 import '../../data/models/register_request_model.dart';
+import '../../data/models/login_request_model.dart';
+import '../../data/services/auth_session_manager.dart';
 import '../../data/services/auth_api_service.dart';
 
 // Widgets
@@ -17,7 +19,8 @@ import '../widgets/auth_button.dart';
 import '../widgets/auth_text_field.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final AuthApiService? authApi;
+  const RegisterScreen({super.key, this.authApi});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -33,7 +36,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  final AuthApiService _authApiService = AuthApiService();
+  late final AuthApiService _authApiService =
+      widget.authApi ?? AuthApiService();
 
   String _selectedRole = 'USUARIO';
   bool _obscurePassword = true;
@@ -69,8 +73,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      AppNotification.showSuccess(context, responseModel.message);
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      try {
+        final session = await _authApiService.login(
+          LoginRequestModel(
+            email: request.email,
+            password: request.password,
+            rememberMe: false,
+          ),
+        );
+        await AuthSessionManager.instance.setSession(
+          session,
+          rememberMe: false,
+        );
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.preferencesOnboarding,
+          (_) => false,
+        );
+      } catch (_) {
+        if (!mounted) return;
+        AppNotification.showSuccess(
+          context,
+          '${responseModel.message} Inicia sesión para elegir tus preferencias.',
+        );
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.login,
+          arguments: true,
+        );
+      }
     } on AuthApiException catch (e) {
       if (!mounted) return;
       AppNotification.showError(context, e.message);

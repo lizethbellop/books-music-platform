@@ -10,6 +10,12 @@ public class OpenLibraryBookDto {
 
     private String title;
 
+    @JsonProperty("subject")
+    private List<String> subjects;
+
+    public List<String> getSubjects() { return subjects; }
+    public void setSubjects(List<String> subjects) { this.subjects = subjects; }
+
     @JsonProperty("author_name")
     private List<String> authorNames;
 
