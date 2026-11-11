@@ -10,6 +10,8 @@ public interface FollowService {
     Follow followUser(UUID followerId, UUID followedId);
 
     void unfollowUser(UUID followerId, UUID followedId);
+    
+    void removeFollower(UUID userId, UUID followerId);
 
     List<Follow> getFollowers(UUID userId);
 

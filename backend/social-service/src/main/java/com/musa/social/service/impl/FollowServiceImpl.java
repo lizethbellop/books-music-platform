@@ -1,6 +1,9 @@
 package com.musa.social.service.impl;
 
 import com.musa.social.entity.Follow;
+import com.musa.social.exception.BadRequestException;
+import com.musa.social.exception.ConflictException;
+import com.musa.social.exception.ResourceNotFoundException;
 import com.musa.social.repository.FollowRepository;
 import com.musa.social.service.FollowService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,7 @@ public class FollowServiceImpl implements FollowService {
     public Follow followUser(UUID followerId, UUID followedId) {
 
         if (followerId.equals(followedId)) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                 "Un usuario no puede seguirse a sí mismo"
             );
         }
@@ -30,7 +33,7 @@ public class FollowServiceImpl implements FollowService {
                 followerId,
                 followedId
         )) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                 "El usuario ya sigue a este usuario"
             );
         }
@@ -53,8 +56,26 @@ public class FollowServiceImpl implements FollowService {
                 followedId
             )
             .orElseThrow(() ->
-                new IllegalStateException(
-                    "El usuario no sigue a este usuario"
+                new ResourceNotFoundException(
+                    "La relación de seguimiento no existe"
+                )
+            );
+
+        followRepository.delete(follow);
+    }
+
+    @Override
+    @Transactional
+    public void removeFollower(UUID userId, UUID followerId) {
+
+        Follow follow = followRepository
+            .findByFollowerIdAndFollowedId(
+                followerId,
+                userId
+            )
+            .orElseThrow(() ->
+                new ResourceNotFoundException(
+                    "Este usuario no te sigue"
                 )
             );
 
