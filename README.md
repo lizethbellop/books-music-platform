@@ -306,3 +306,19 @@ Si el comando no muestra resultados, no se detectó un proceso escuchando en ese
 El frontend centraliza sus URLs y utiliza el Gateway como punto de entrada a los microservicios.
 
 La observabilidad mediante métricas, trazas distribuidas y logs correlacionados queda para una fase posterior.
+
+
+## Recomendaciones de libros en Inicio
+
+Inicio muestra lecturas inspiradas en las listas del perfil, con tarjetas que abren
+el detalle existente de libros. Usa el JWT y Gateway de musa. y el servicio Python
+en el puerto 8085. Ver [integración y arranque](backend/recommendations-service/docs/HOME.md).
+No se agregó una página de recomendaciones ni integración musical en Inicio.
+
+
+## Preferencias después del registro
+
+El registro abre una selección inicial de libros, canciones y artistas, con búsqueda
+en los catálogos existentes. Se guardan juntas en Mi perfil, o se puede omitir.
+Inicio usa los libros de esas preferencias junto con las listas personales.
+Ver [flujo e integración](docs/preferences-onboarding.md).

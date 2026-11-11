@@ -56,6 +56,16 @@ class BooksSecurityTest {
         return "Bearer " + token.serialize();
     }
 
+    @Test void protectsRecommendationCandidatesAndUsesExistingBookRoute() throws Exception {
+        mvc.perform(get("/books/recommendation-candidates").param("q", "subject:Fantasy"))
+                .andExpect(status().isUnauthorized());
+        when(openLibrary.getRecommendationCandidates("subject:Fantasy")).thenReturn(List.of());
+        mvc.perform(get("/books/recommendation-candidates").param("q", "subject:Fantasy")
+                        .header("Authorization", bearer(UUID.randomUUID())))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        verify(openLibrary).getRecommendationCandidates("subject:Fantasy");
+    }
+
     @Test void rejectsMissingToken() throws Exception {
         mvc.perform(get("/books/library")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

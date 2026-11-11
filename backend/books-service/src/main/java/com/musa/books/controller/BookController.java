@@ -2,6 +2,7 @@ package com.musa.books.controller;
 
 import com.musa.books.dto.BookDetailDto;
 import com.musa.books.dto.BookSearchResultDto;
+import com.musa.books.dto.BookRecommendationCandidateDto;
 import com.musa.books.service.OpenLibraryService;
 import com.musa.books.service.TranslationService;
 
@@ -39,6 +40,16 @@ public class BookController {
                 openLibraryService.searchBooks(q);
 
         return ResponseEntity.ok(books);
+    }
+
+    @GetMapping("/recommendation-candidates")
+    public ResponseEntity<List<BookRecommendationCandidateDto>> recommendationCandidates(
+            @RequestParam String q
+    ) {
+        if (q == null || q.isBlank() || q.length() > 1000) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(openLibraryService.getRecommendationCandidates(q));
     }
 
     @GetMapping("/explore")

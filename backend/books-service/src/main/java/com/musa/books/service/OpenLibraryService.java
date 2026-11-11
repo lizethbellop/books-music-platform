@@ -1,6 +1,7 @@
 package com.musa.books.service;
 
 import com.musa.books.dto.BookSearchResultDto;
+import com.musa.books.dto.BookRecommendationCandidateDto;
 import com.musa.books.dto.OpenLibraryBookDto;
 import com.musa.books.dto.OpenLibrarySearchResponse;
 import com.musa.books.dto.OpenLibraryEditionDto;
@@ -129,6 +130,28 @@ public class OpenLibraryService {
                 .map(this::toSearchResult)
                 .toList();
     }    
+
+    public List<BookRecommendationCandidateDto> getRecommendationCandidates(String query) {
+        OpenLibrarySearchResponse response = restClient.get()
+                .uri(builder -> builder.path("/search.json")
+                        .queryParam("q", query)
+                        .queryParam("fields", "key,title,author_name,first_publish_year,cover_i,subject")
+                        .queryParam("limit", 30)
+                        .build())
+                .retrieve().body(OpenLibrarySearchResponse.class);
+        if (response == null || response.getDocs() == null) return List.of();
+        return response.getDocs().stream()
+                .filter(book -> book.getKey() != null
+                        && book.getKey().replace("/works/", "").matches("OL[0-9]+W")
+                        && book.getTitle() != null && !book.getTitle().isBlank())
+                .map(book -> new BookRecommendationCandidateDto(
+                        book.getKey().replace("/works/", ""), book.getTitle(),
+                        book.getAuthorNames() == null ? List.of() : book.getAuthorNames(),
+                        book.getFirstPublishYear(), buildCoverUrl(book.getCoverId()),
+                        book.getSubjects() == null ? List.of()
+                                : book.getSubjects().stream().limit(40).toList()
+                )).toList();
+    }
 
     public List<BookSearchResultDto> getExploreBooks() {
 

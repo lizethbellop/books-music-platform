@@ -40,6 +40,14 @@ public class PreferenceController {
         return preferenceService.addElement(userId, request);
     }
 
+    @PostMapping("/batch")
+    public PreferencesResponse saveInitialPreferences(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody com.musa.profile.dto.SaveInitialPreferencesRequest request
+    ) {
+        return preferenceService.saveInitialPreferences(UUID.fromString(jwt.getSubject()), request);
+    }
+
     @DeleteMapping("/{elementId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeElement(

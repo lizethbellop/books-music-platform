@@ -33,7 +33,8 @@ class _AppShellState extends State<AppShell> {
   void _select(AppSection section) => setState(() => _section = section);
 
   Widget _page() => switch (_section) {
-    AppSection.home => HomePage(userId: widget.userId, embedded: true),
+    AppSection.home => HomePage(userId: widget.userId, embedded: true,
+      onOpenLists: () => _select(AppSection.profile)),
     AppSection.music => MusicHomePage(userId: widget.userId),
     AppSection.books => BooksHomePage(userId: widget.userId),
     AppSection.profile => ProfilePage(

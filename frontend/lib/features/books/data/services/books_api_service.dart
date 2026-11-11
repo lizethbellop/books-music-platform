@@ -243,4 +243,5 @@ class BooksApiService {
 
     throw Exception('No se pudo agregar el libro a favoritos');
   }
+  void close() => _client.close();
 }

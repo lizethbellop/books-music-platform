@@ -44,6 +44,16 @@ public class UserListController {
         return userListService.getOwnLists(userId);
     }
 
+    // Only references: avoids resolving music/catalog details just to build a Home profile.
+    @GetMapping("/book-seeds")
+    public java.util.Map<String, List<String>> getOwnBookSeeds(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return java.util.Map.of("bookIds", userListService.getOwnBookSeeds(
+                UUID.fromString(jwt.getSubject())
+        ));
+    }
+
     @PutMapping("/{listId}")
     public UserListResponse updateList(
             @AuthenticationPrincipal Jwt jwt,

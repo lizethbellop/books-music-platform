@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/routes/app_routes.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/musa_destination.dart';
 import '../../../../shared/widgets/musa_navigation_shell.dart';
+import '../widgets/home_book_recommendations_section.dart';
+import '../../data/services/recommendations_api_service.dart';
 
 class HomePage extends StatelessWidget {
   final String userId;
   final bool embedded;
+  final VoidCallback? onOpenLists;
+  final RecommendationsApiService? recommendationsApi;
 
-  const HomePage({super.key, required this.userId, this.embedded = false});
+  const HomePage({
+    super.key,
+    required this.userId,
+    this.embedded = false,
+    this.onOpenLists,
+    this.recommendationsApi,
+  });
 
   void _selectDestination(BuildContext context, MusaDestination destination) {
     switch (destination) {
@@ -69,69 +78,20 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 Text(
-                  'Descubre lo que está pasando en Musa.',
+                  'Tu próxima lectura empieza con lo que guardas.',
                   style: AppTextStyles.secondary,
                 ),
 
                 const SizedBox(height: 36),
 
-                Center(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    width: double.infinity,
-                    padding: EdgeInsets.all(isDesktop ? 40 : 28),
-                    decoration: BoxDecoration(
-                      color: AppColors.warmWhite,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome_outlined,
-                          size: 56,
-                          color: AppColors.sage,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Todavía no hay contenido',
-                          style: AppTextStyles.sectionTitle,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Aquí aparecerán las novedades, '
-                          'recomendaciones y actividad de '
-                          'las personas que sigues.',
-                          style: AppTextStyles.body,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Explorar se conectará próximamente.',
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.explore_outlined),
-                          label: const Text('Explorar Musa'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.ink,
-                            side: const BorderSide(color: AppColors.lavender),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                HomeBookRecommendationsSection(
+                  key: ValueKey(userId),
+                  userId: userId,
+                  api: recommendationsApi,
+                  onOpenLists:
+                      onOpenLists ??
+                      () =>
+                          _selectDestination(context, MusaDestination.profile),
                 ),
               ],
             ),

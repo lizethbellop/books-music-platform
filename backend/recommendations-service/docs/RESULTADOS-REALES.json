@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "version": "books-openlibrary-v2",
+  "domain": "books",
+  "namespace": "goodbooks",
+  "algorithm": "knn",
+  "seed": 42,
+  "sources": {
+    "catalog": "bb5144a21e04728370b284addd93838af957525b3f5873820b344d0c0e063d69",
+    "ratings": "a05b0a5c9e2f1798bef7425d6e7d0127fc9b52f3e277d6f1c0e4778d80e661df",
+    "crosswalk": "52c3fcba932bfc91cdbc56f67850496c2c0c276792137b8a8d712cd4bf38d0d1"
+  },
+  "serving_namespace": "openlibrary-work",
+  "mapped_items": 16,
+  "evaluation": {
+    "eligible_users": 45071,
+    "sampled_users": 1000,
+    "sampling": "seeded uniform without replacement before relevance filtering"
+  },
+  "training_seconds": 98.78924345899986,
+  "split": {
+    "train": 889336,
+    "validation": 45071,
+    "test": 45071
+  },
+  "validation": {
+    "popularity": {
+      "users": 654,
+      "recall_at_10": 0.0,
+      "ndcg_at_10": 0.0,
+      "coverage": 0.0012,
+      "p95_ms": 0.5000521999591001
+    },
+    "knn": {
+      "users": 654,
+      "recall_at_10": 0.22629969418960244,
+      "ndcg_at_10": 0.14748382733108992,
+      "coverage": 0.3901,
+      "p95_ms": 0.9290580001334092
+    },
+    "mf": {
+      "users": 654,
+      "recall_at_10": 0.0015290519877675841,
+      "ndcg_at_10": 0.0005446593075046211,
+      "coverage": 0.018,
+      "p95_ms": 1.2367431998654865
+    },
+    "hybrid": {
+      "users": 654,
+      "recall_at_10": 0.21865443425076453,
+      "ndcg_at_10": 0.13626470865973664,
+      "coverage": 0.4016,
+      "p95_ms": 1.4126396999927238
+    }
+  },
+  "test": {
+    "users": 671,
+    "recall_at_10": 0.22652757078986588,
+    "ndcg_at_10": 0.1592470926015183,
+    "coverage": 0.3858,
+    "p95_ms": 0.942812499943102
+  },
+  "baseline_test": {
+    "users": 671,
+    "recall_at_10": 0.0,
+    "ndcg_at_10": 0.0,
+    "coverage": 0.0011,
+    "p95_ms": 0.4735415002414811
+  },
+  "code_sha256": "fbdb58b8c0238f69a6e7875be00151ec2be1899048a57febbcfc016979a0b753",
+  "hyperparameters": {
+    "knn_k": 40,
+    "positive_threshold": 4,
+    "tfidf_max_features": 30000,
+    "mf_factors": 20,
+    "mf_epochs": 3,
+    "mf_learning_rate": 0.01,
+    "mf_regularization": 0.02,
+    "fold_in_regularization": 0.1,
+    "nmf_enabled": false,
+    "nmf_factors_max": 32,
+    "nmf_max_iter": 200,
+    "hybrid_weights": [
+      0.55,
+      0.35,
+      0.1
+    ]
+  },
+  "python": "3.12.14",
+  "dependencies": {
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "scikit-learn": "1.6.1",
+    "pandas": "2.2.3"
+  },
+  "files": {
+    "arrays.npz": "5297b86edeb8fa3925eb82f16a42043c5639f8e5328a758ccfa93531d5784d23",
+    "content.npz": "eba1200f34d509cbf9612a8c809513c9129a12bf842788c15d8d30f8b0246f6e",
+    "neighbors.npz": "72fa12931cd644bc6b6eb40f0e5db2252f7021319cd7743e3f96378fb085336e",
+    "catalog.json": "fc7be91f32fcc0f0b4fa650be374a8cbac6a4d93574d5237b264a8d3ad26d1b0"
+  }
+}
