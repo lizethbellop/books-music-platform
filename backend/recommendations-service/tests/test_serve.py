@@ -1,5 +1,6 @@
 import base64
 import os
+import secrets
 import pytest
 from recommender.serve import configure
 
@@ -10,7 +11,9 @@ def test_reuses_only_existing_jwt_key_without_overwriting_environment(tmp_path, 
     monkeypatch.delenv("BOOKS_DB_PASSWORD", raising=False)
     secret = base64.b64encode(b"k"*64).decode()
     auth = tmp_path/"books.env"
-    auth.write_text(f"JWT_SECRET={secret}\nBOOKS_DB_PASSWORD=do-not-import\n")
+    # Generate a dummy value: this test never uses database credentials.
+    database_password = secrets.token_urlsafe(24)
+    auth.write_text(f"JWT_SECRET={secret}\nBOOKS_DB_PASSWORD={database_password}\n")
     configure(tmp_path/"absent.env", auth)
     assert os.environ["JWT_SECRET"] == secret
     assert "BOOKS_DB_PASSWORD" not in os.environ
