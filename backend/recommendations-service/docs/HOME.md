@@ -61,7 +61,7 @@ entre catálogos para recomendar libros sin correspondencia.
 ## Arranque local
 
 Necesita los servicios habituales de musa. (users para login, profile, books y
-Gateway), más el recomendador en 8085. Hay que reiniciar/recompilar profile, books,
+Gateway), más el recomendador en 8087. Hay que reiniciar/recompilar profile, books,
 Gateway y Flutter tras incorporar estos cambios; una instancia Java antigua no
 contiene los endpoints nuevos. No cambian el esquema ni las migraciones de datos.
 
@@ -88,7 +88,7 @@ falla al arrancar; no se ignoran silenciosamente artefactos corruptos.
 `PROFILE_SERVICE_URL` y `BOOKS_SERVICE_URL` son los orígenes de los servicios Java,
 por defecto `http://localhost:8082` y `http://localhost:8081`. En contenedores usar
 los nombres internos correspondientes. No agregar `/api/profiles` o `/books` a estas
-variables. Gateway usa RECOMMENDATIONS_SERVICE_URL o localhost:8085. Flutter usa el
+variables. Gateway usa RECOMMENDATIONS_SERVICE_URL o localhost:8087. Flutter usa el
 GATEWAY_URL ya centralizado; no necesita apuntar al puerto Python directamente.
 Gateway permite CORS de desarrollo para la nueva ruta desde localhost/127.0.0.1
 con cualquier puerto. En web desplegada, configurar MUSA_WEB_ORIGIN con el origen

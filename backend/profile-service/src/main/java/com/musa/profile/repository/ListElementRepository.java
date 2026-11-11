@@ -26,4 +26,17 @@ public interface ListElementRepository
             String elementType,
             String referenceId
     );
+
+    @Query("""
+            SELECT COUNT(e)
+            FROM ListElement e
+            WHERE e.listId IN (
+                SELECT l.id
+                FROM UserList l
+                WHERE l.profileId = :profileId
+            )
+            """)
+    long countByProfileId(
+            @Param("profileId") UUID profileId
+    );
 }

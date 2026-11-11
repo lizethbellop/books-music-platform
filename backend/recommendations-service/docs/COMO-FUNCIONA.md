@@ -127,7 +127,7 @@ Content-Type: application/json
 El recorrido es:
 
 ```text
-App -> Gateway :8084 -> recomendador :8085
+App -> Gateway :8084 -> recomendador :8087
                        1. Verifica el JWT de musa.
                        2. Convierte las obras semilla a IDs internos Goodbooks.
                        3. Usa el modelo ya cargado para ordenar libros.

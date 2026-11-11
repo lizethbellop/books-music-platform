@@ -21,9 +21,9 @@ Mantener esta asignación en los entornos locales del equipo:
 | Users Service | 8083 | `http://localhost:8083` |
 | API Gateway | 8084 | `http://localhost:8084` |
 | Social Service (reservado) | 8085 | `http://localhost:8085` |
-| Communities Service (reservado) | 8086 | `http://localhost:8086` |
-| Chat Service (reservado) | 8087 | `http://localhost:8087` |
-| Recommendations Service (reservado) | 8088 | `http://localhost:8088` |
+| Communities Service | 8086 | `http://localhost:8086` |
+| Chat Service (reservado) | 8088 | `http://localhost:8087` |
+| Recommendations Service (reservado) | 8087 | `http://localhost:8088` |
 
 Una misma instancia de PostgreSQL puede atender las bases de datos de los servicios en el puerto `5432`.
 

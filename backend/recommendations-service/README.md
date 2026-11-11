@@ -220,7 +220,7 @@ siendo datos derivados de comportamiento y deben protegerse.
 ```bash
 export MODEL_PATH=artifacts/books-openlibrary-v2
 # Cargar JWT_SECRET desde gestor de secretos: la misma clave Base64 de users-service.
-uvicorn recommender.api:app --host 0.0.0.0 --port 8085
+uvicorn recommender.api:app --host 0.0.0.0 --port 8087
 ```
 
 JWT: HS512, clave >=64 bytes decodificados, issuer `musa-auth`, audience `musa-api`,
@@ -229,7 +229,7 @@ ni se acepta consultar historial ajeno por ID. Las limitaciones de revocación
 stateless son las mismas de los demás resource servers.
 
 Gateway reenvía `/api/recommendations/**` a
-`${RECOMMENDATIONS_SERVICE_URL:http://localhost:8085}` sin cambiar ruta ni Bearer.
+`${RECOMMENDATIONS_SERVICE_URL:http://localhost:8087}` sin cambiar ruta ni Bearer.
 
 ```bash
 curl -X POST http://localhost:8084/api/recommendations/books \

@@ -5,5 +5,5 @@ RUN pip install --no-cache-dir -r requirements.lock
 COPY recommender ./recommender
 RUN useradd --uid 10001 --create-home service
 USER 10001
-EXPOSE 8085
-CMD ["uvicorn", "recommender.api:app", "--host", "0.0.0.0", "--port", "8085"]
+EXPOSE 8087
+CMD ["uvicorn", "recommender.api:app", "--host", "0.0.0.0", "--port", "8087"]

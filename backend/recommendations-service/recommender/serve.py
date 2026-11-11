@@ -35,7 +35,7 @@ def main():
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--auth-env", help="Books/users .env; reads only JWT_SECRET if not already configured")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8085)
+    parser.add_argument("--port", type=int, default=8087)
     args = parser.parse_args()
     try:
         configure(args.env_file, args.auth_env)

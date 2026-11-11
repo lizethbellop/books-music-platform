@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface UserListRepository extends JpaRepository<UserList, UUID> {
 
     List<UserList> findByProfileIdOrderByCreatedAtDesc(UUID profileId);
+
+    long countByProfileId(UUID profileId);
 }

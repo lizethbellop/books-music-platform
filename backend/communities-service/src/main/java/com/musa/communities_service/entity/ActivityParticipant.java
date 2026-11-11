@@ -37,9 +37,11 @@ public class ActivityParticipant {
     protected ActivityParticipant() {
     }
 
-    public ActivityParticipant(CommunityActivity activity, UUID userId) {
+    public ActivityParticipant(CommunityActivity activity, UUID userId, ParticipantStatus status) {
         this.activity = activity;
         this.userId = userId;
+        this.status = status;
+        this.confirmedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     @PrePersist
@@ -84,5 +86,9 @@ public class ActivityParticipant {
 
     public OffsetDateTime getConfirmedAt() {
         return confirmedAt;
+    }
+
+    public void setConfirmedAt(OffsetDateTime confirmedAt) {
+        this.confirmedAt = confirmedAt;
     }
 }
