@@ -6,17 +6,23 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/music_search_item.dart';
 import '../../data/music_item.dart';
 import '../../data/services/music_api_service.dart';
-import '../widgets/explore_card.dart';
+import '../../../home/presentation/widgets/home_music_recommendations_section.dart';
+import '../../../home/data/models/home_music_recommendations.dart';
+import '../../../home/data/services/recommendations_api_service.dart';
 import '../widgets/music_card.dart';
 import '../widgets/music_filter_chip.dart';
 import 'music_detail_page.dart';
 
 class MusicHomePage extends StatefulWidget {
   final String userId;
+  final RecommendationsApiService? recommendationsApi;
+  final MusicApiService? musicApi;
 
   const MusicHomePage({
     super.key,
     required this.userId,
+    this.recommendationsApi,
+    this.musicApi,
   });
 
   @override
@@ -26,7 +32,7 @@ class MusicHomePage extends StatefulWidget {
 class _MusicHomePageState extends State<MusicHomePage> {
   final TextEditingController _searchController = TextEditingController();
 
-  final MusicApiService _musicApiService = MusicApiService();
+  late final MusicApiService _musicApiService;
 
   List<MusicSearchItem> _searchResults = [];
 
@@ -46,15 +52,14 @@ class _MusicHomePageState extends State<MusicHomePage> {
     }
 
     return _searchResults
-        .where(
-          (item) => item.contentType == _selectedFilter,
-        )
+        .where((item) => item.contentType == _selectedFilter)
         .toList();
   }
 
   @override
   void initState() {
     super.initState();
+    _musicApiService = widget.musicApi ?? MusicApiService();
     _loadReviewedMusic();
   }
 
@@ -83,6 +88,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
   @override
   void dispose() {
     _searchController.dispose();
+    if (widget.musicApi == null) _musicApiService.close();
     super.dispose();
   }
 
@@ -90,6 +96,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
     final query = _searchController.text.trim();
 
     if (query.isEmpty) {
+      setState(() {
+        _hasSearched = false;
+        _searchResults = [];
+        _errorMessage = null;
+      });
       return;
     }
 
@@ -142,10 +153,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Música',
-                style: AppTextStyles.pageTitle,
-              ),
+              Text('Música', style: AppTextStyles.pageTitle),
 
               const SizedBox(height: 24),
 
@@ -155,16 +163,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
                 onSubmitted: (_) => _searchMusic(),
                 decoration: InputDecoration(
                   hintText: 'Buscar canciones, álbumes o artistas...',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.ink,
-                  ),
+                  prefixIcon: const Icon(Icons.search, color: AppColors.ink),
                   suffixIcon: IconButton(
                     onPressed: _searchMusic,
-                    icon: const Icon(
-                      Icons.arrow_forward,
-                      color: AppColors.ink,
-                    ),
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.ink),
                   ),
                 ),
               ),
@@ -212,6 +214,28 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               if (_hasSearched) const SizedBox(height: 38),
 
+              for (final kind in MusicRecommendationKind.values)
+                Visibility(
+                  visible:
+                      !_hasSearched &&
+                      (_selectedFilter == 'ALL' ||
+                          _selectedFilter == kind.contentType),
+                  maintainState: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 36),
+                    child: HomeMusicRecommendationsSection(
+                      key: ValueKey(
+                        'music-catalog-${kind.name}-${widget.userId}',
+                      ),
+                      userId: widget.userId,
+                      kind: kind,
+                      allowRefresh: false,
+                      api: widget.recommendationsApi,
+                      onOpenLists: () {},
+                    ),
+                  ),
+                ),
+
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -219,17 +243,8 @@ class _MusicHomePageState extends State<MusicHomePage> {
                 runSpacing: 8,
                 children: [
                   Text(
-                    'Mis músicas reseñadas',
+                    'Tus reseñas musicales',
                     style: AppTextStyles.sectionTitle,
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Ver más  →',
-                      style: AppTextStyles.button.copyWith(
-                        color: AppColors.ink,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -238,9 +253,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
               if (_isLoadingReviewedMusic)
                 const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.lavender,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.lavender),
                 )
               else if (_reviewedMusic.isEmpty)
                 Text(
@@ -252,11 +265,14 @@ class _MusicHomePageState extends State<MusicHomePage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: _reviewedMusic
+                        .where(
+                          (item) =>
+                              _selectedFilter == 'ALL' ||
+                              item.type.name.toUpperCase() == _selectedFilter,
+                        )
                         .map(
                           (item) => Padding(
-                            padding: const EdgeInsets.only(
-                              right: 16,
-                            ),
+                            padding: const EdgeInsets.only(right: 16),
                             child: MusicCard(
                               userId: widget.userId,
                               item: item,
@@ -267,44 +283,6 @@ class _MusicHomePageState extends State<MusicHomePage> {
                         .toList(),
                   ),
                 ),
-
-              const SizedBox(height: 44),
-
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Explora para ti',
-                        style: AppTextStyles.sectionTitle,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Recomendaciones basadas en tus gustos.',
-                        style: AppTextStyles.secondary,
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Ver más  →',
-                      style: AppTextStyles.button.copyWith(
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              const _ExploreGrid(),
 
               const SizedBox(height: 40),
             ],
@@ -319,18 +297,13 @@ class _MusicHomePageState extends State<MusicHomePage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(
-            color: AppColors.lavender,
-          ),
+          child: CircularProgressIndicator(color: AppColors.lavender),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Text(
-        _errorMessage!,
-        style: AppTextStyles.secondary,
-      );
+      return Text(_errorMessage!, style: AppTextStyles.secondary);
     }
 
     if (_filteredSearchResults.isEmpty) {
@@ -345,10 +318,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          title: 'Resultados',
-          subtitle: _filterSubtitle(),
-        ),
+        _SectionTitle(title: 'Resultados', subtitle: _filterSubtitle()),
 
         const SizedBox(height: 16),
 
@@ -359,10 +329,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
             final columns = width >= 1000
                 ? 4
                 : width >= 650
-                    ? 3
-                    : width >= 420
-                        ? 2
-                        : 1;
+                ? 3
+                : width >= 420
+                ? 2
+                : 1;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -401,82 +371,17 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: AppTextStyles.sectionTitle,
-        ),
+        Text(title, style: AppTextStyles.sectionTitle),
         const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: AppTextStyles.secondary,
-        ),
+        Text(subtitle, style: AppTextStyles.secondary),
       ],
-    );
-  }
-}
-
-class _ExploreGrid extends StatelessWidget {
-  const _ExploreGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    const cards = [
-      ExploreCard(
-        title: 'Indie para tu día',
-        subtitle: 'Artistas y álbumes que te pueden gustar',
-        color: AppColors.lilac,
-        icon: Icons.album_outlined,
-      ),
-      ExploreCard(
-        title: 'Clásicos',
-        subtitle: 'Álbumes que todos deberían escuchar',
-        color: AppColors.mint,
-        icon: Icons.library_music_outlined,
-      ),
-      ExploreCard(
-        title: 'Nuevos lanzamientos',
-        subtitle: 'Lo más reciente de la escena musical',
-        color: AppColors.butter,
-        icon: Icons.headphones_outlined,
-      ),
-      ExploreCard(
-        title: 'Hecho para ti',
-        subtitle: 'Una selección basada en tu actividad',
-        color: AppColors.lavender,
-        icon: Icons.auto_awesome_outlined,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        final columns = width >= 1100
-            ? 4
-            : width >= 650
-                ? 2
-                : 1;
-
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: columns,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: columns == 1 ? 1.8 : 1.45,
-          children: cards,
-        );
-      },
     );
   }
 }
@@ -485,10 +390,7 @@ class _SearchResultCard extends StatelessWidget {
   final String userId;
   final MusicSearchItem item;
 
-  const _SearchResultCard({
-    required this.item,
-    required this.userId,
-  });
+  const _SearchResultCard({required this.item, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -502,10 +404,7 @@ class _SearchResultCard extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) {
-                return MusicDetailPage(
-                  item: item,
-                  userId: userId,
-                );
+                return MusicDetailPage(item: item, userId: userId);
               },
             ),
           );
@@ -550,10 +449,7 @@ class _SearchResultCard extends StatelessWidget {
 
               const SizedBox(height: 6),
 
-              Text(
-                _typeText(item.contentType),
-                style: AppTextStyles.secondary,
-              ),
+              Text(_typeText(item.contentType), style: AppTextStyles.secondary),
             ],
           ),
         ),
@@ -579,11 +475,7 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       color: AppColors.lilac,
       child: const Center(
-        child: Icon(
-          Icons.music_note,
-          size: 44,
-          color: AppColors.ink,
-        ),
+        child: Icon(Icons.music_note, size: 44, color: AppColors.ink),
       ),
     );
   }

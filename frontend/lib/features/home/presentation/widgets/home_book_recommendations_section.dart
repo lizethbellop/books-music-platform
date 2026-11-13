@@ -8,6 +8,8 @@ import '../../data/services/recommendations_api_service.dart';
 
 class HomeBookRecommendationsSection extends StatefulWidget {
   final String userId;
+  final bool allowRefresh;
+  final String? referenceBookId;
   final VoidCallback onOpenLists;
   final RecommendationsApiService? api;
 
@@ -16,6 +18,8 @@ class HomeBookRecommendationsSection extends StatefulWidget {
     required this.userId,
     required this.onOpenLists,
     this.api,
+    this.allowRefresh = true,
+    this.referenceBookId,
   });
 
   @override
@@ -27,12 +31,46 @@ class _HomeBookRecommendationsSectionState
     extends State<HomeBookRecommendationsSection> {
   late RecommendationsApiService _api;
   late Future<HomeBookRecommendations> _future;
+  bool _requestInFlight = false;
+  int _requestGeneration = 0;
+
+  String? _lastFingerprint;
+  String? _refreshMessage;
+
+  Future<HomeBookRecommendations> _load({bool refreshed = false}) {
+    final generation = ++_requestGeneration;
+    _requestInFlight = true;
+    _refreshMessage = null;
+    return _api
+        .getHomeBooks(referenceBookId: widget.referenceBookId)
+        .then((data) {
+          if (generation == _requestGeneration) {
+            final items = data.items
+                .map(
+                  (item) =>
+                      '${item.book.externalId}:${item.book.title}:${item.reason}',
+                )
+                .join('|');
+            final fingerprint = '${data.mode}:${data.preparationStatus}:$items';
+            if (refreshed) {
+              _refreshMessage = fingerprint == _lastFingerprint
+                  ? 'Actualizado. No hay nuevas sugerencias por ahora.'
+                  : 'Recomendaciones actualizadas.';
+            }
+            _lastFingerprint = fingerprint;
+          }
+          return data;
+        })
+        .whenComplete(() {
+          if (generation == _requestGeneration) _requestInFlight = false;
+        });
+  }
 
   @override
   void initState() {
     super.initState();
     _api = widget.api ?? RecommendationsApiService();
-    _future = _api.getHomeBooks();
+    _future = _load();
   }
 
   @override
@@ -42,13 +80,16 @@ class _HomeBookRecommendationsSectionState
       if (oldWidget.api == null) _api.close();
       _api = widget.api ?? RecommendationsApiService();
     }
-    if (oldWidget.userId != widget.userId || oldWidget.api != widget.api) {
-      _future = _api.getHomeBooks();
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.api != widget.api ||
+        oldWidget.referenceBookId != widget.referenceBookId) {
+      _future = _load();
     }
   }
 
   void _refresh() {
-    final future = _api.getHomeBooks();
+    if (_requestInFlight) return;
+    final future = _load(refreshed: true);
     setState(() {
       _future = future;
     });
@@ -69,7 +110,6 @@ class _HomeBookRecommendationsSectionState
         ),
       ),
     );
-    if (mounted) _refresh();
   }
 
   @override
@@ -79,20 +119,46 @@ class _HomeBookRecommendationsSectionState
       Row(
         children: [
           Expanded(
-            child: Text('Lecturas para ti', style: AppTextStyles.sectionTitle),
+            child: FutureBuilder<HomeBookRecommendations>(
+              future: _future,
+              builder: (_, snapshot) => Text(
+                widget.referenceBookId != null
+                    ? 'Más libros como este'
+                    : snapshot.data?.mode == 'explore'
+                    ? 'Lecturas por descubrir'
+                    : 'Lecturas para ti',
+                style: AppTextStyles.sectionTitle,
+              ),
+            ),
           ),
-          IconButton(
-            tooltip: 'Actualizar recomendaciones',
-            onPressed: _refresh,
-            icon: const Icon(Icons.refresh),
-          ),
+          if (widget.referenceBookId == null && widget.allowRefresh)
+            FutureBuilder<HomeBookRecommendations>(
+              future: _future,
+              builder: (_, snapshot) {
+                final busy = snapshot.connectionState != ConnectionState.done;
+                return IconButton(
+                  tooltip: busy
+                      ? 'Actualizando recomendaciones'
+                      : 'Actualizar recomendaciones',
+                  onPressed: busy ? null : _refresh,
+                  icon: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                );
+              },
+            ),
         ],
       ),
       const SizedBox(height: 8),
       FutureBuilder<HomeBookRecommendations>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          if (snapshot.connectionState != ConnectionState.done &&
+              snapshot.data == null) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
               child: Center(
@@ -106,39 +172,80 @@ class _HomeBookRecommendationsSectionState
             final error = snapshot.error;
             return _message(
               error is RecommendationsApiException ? error.message : 'No pudimos cargar tus recomendaciones. Intenta nuevamente.',
-              action: 'Reintentar',
-              onTap: _refresh,
+              action: widget.referenceBookId == null && widget.allowRefresh
+                  ? 'Reintentar'
+                  : null,
+              onTap: widget.referenceBookId == null && widget.allowRefresh
+                  ? _refresh
+                  : null,
             );
           }
           final data = snapshot.data!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_refreshMessage != null && widget.referenceBookId == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(_refreshMessage!, style: AppTextStyles.secondary),
+                ),
               Text(
-                data.seedCount > 0
-                    ? 'Inspiradas en tus preferencias y en tus listas.'
+                widget.referenceBookId != null
+                    ? 'Lecturas que comparten temas, géneros u otras características con este libro.'
+                    : data.seedCount > 0
+                    ? 'Inspiradas en tus preferencias, listas y libros mejor valorados.'
                     : 'Descubre una lectura. Agrega libros a tus preferencias o listas para recibir sugerencias más cercanas a ti.',
                 style: AppTextStyles.secondary,
               ),
+              if (data.isPreparing) ...[
+                const SizedBox(height: 12),
+                Text(
+                  widget.referenceBookId == null
+                      ? 'Estamos preparando más opciones a partir de tus gustos.'
+                      : 'Estamos preparando opciones relacionadas con este libro.',
+                  style: AppTextStyles.secondary,
+                ),
+              ],
+              if (data.preparationStatus == 'failed' ||
+                  data.preparationStatus == 'busy') ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Algunas opciones siguen pendientes. Puedes volver a consultar más tarde.',
+                  style: AppTextStyles.secondary,
+                ),
+              ],
               const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: widget.onOpenLists,
-                icon: const Icon(Icons.collections_bookmark_outlined),
-                label: const Text('Mis listas'),
-              ),
-              if (data.partial)
+              if (widget.referenceBookId == null && widget.allowRefresh)
+                TextButton.icon(
+                  onPressed: widget.onOpenLists,
+                  icon: const Icon(Icons.collections_bookmark_outlined),
+                  label: const Text('Mis listas'),
+                ),
+              if (data.partial && widget.referenceBookId == null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'Algunos libros no se pudieron consultar. Puedes actualizar para intentarlo de nuevo.',
+                    'Estas sugerencias todavía no incluyen todos tus gustos.',
                     style: AppTextStyles.secondary,
                   ),
                 ),
               if (data.items.isEmpty)
                 _message(
-                  'Todavía no encontramos otras lecturas para mostrarte. Prueba agregando libros a tus preferencias o listas.',
-                  action: 'Ver mis listas',
-                  onTap: widget.onOpenLists,
+                  data.isPreparing
+                      ? 'Estamos buscando libros con características similares. Puedes seguir explorando mientras se preparan.'
+                      : data.mode == 'reference_not_prepared'
+                      ? 'Por ahora no hay libros similares disponibles.'
+                      : data.mode == 'catalog_not_ready'
+                      ? 'Todavía no hay sugerencias de lectura disponibles.'
+                      : widget.referenceBookId != null
+                      ? 'Todavía no encontramos otros libros con suficientes características en común.'
+                      : 'Aún no encontramos otras lecturas para tus gustos. Puedes ampliar tus preferencias o volver después.',
+                  action: widget.referenceBookId == null && widget.allowRefresh
+                      ? 'Ver mis listas'
+                      : null,
+                  onTap: widget.referenceBookId == null && widget.allowRefresh
+                      ? widget.onOpenLists
+                      : null,
                 )
               else
                 SizedBox(
@@ -160,27 +267,26 @@ class _HomeBookRecommendationsSectionState
     ],
   );
 
-  Widget _message(
-    String message, {
-    required String action,
-    required VoidCallback onTap,
-  }) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: AppColors.warmWhite,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(message, style: AppTextStyles.body),
-        const SizedBox(height: 12),
-        OutlinedButton(onPressed: onTap, child: Text(action)),
-      ],
-    ),
-  );
+  Widget _message(String message, {String? action, VoidCallback? onTap}) =>
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.warmWhite,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message, style: AppTextStyles.body),
+            if (action != null && onTap != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: onTap, child: Text(action)),
+            ],
+          ],
+        ),
+      );
 }
 
 class _RecommendationCard extends StatelessWidget {

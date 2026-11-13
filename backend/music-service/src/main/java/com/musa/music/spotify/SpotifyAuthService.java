@@ -24,7 +24,13 @@ public class SpotifyAuthService {
     @Value("${spotify.token-url}")
     private String tokenUrl;
 
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
+
+    private String cachedToken;
+    private java.time.Instant tokenExpiresAt=java.time.Instant.EPOCH;
+    public SpotifyAuthService(@org.springframework.beans.factory.annotation.Qualifier("spotifyRestClient") RestClient client) {
+        this.restClient=client;
+    }
 
     public boolean isConfigured() {
         return clientId != null
@@ -33,7 +39,8 @@ public class SpotifyAuthService {
                 && !clientSecret.isBlank();
     }
 
-    public String getAccessToken() {
+    public synchronized String getAccessToken() {
+        if (cachedToken!=null && java.time.Instant.now().isBefore(tokenExpiresAt)) return cachedToken;
         if (!isConfigured()) {
                 throw new IllegalStateException(
                         "Spotify no está configurado en este entorno"
@@ -65,6 +72,9 @@ public class SpotifyAuthService {
             );
         }
 
-        return response.get("access_token").toString();
+        long expiresIn=response.get("expires_in") instanceof Number value ? value.longValue() : 3600;
+        cachedToken=response.get("access_token").toString();
+        tokenExpiresAt=java.time.Instant.now().plusSeconds(Math.max(0,expiresIn-60));
+        return cachedToken;
     }
 }

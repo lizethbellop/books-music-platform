@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../home/presentation/widgets/home_book_recommendations_section.dart';
 import '../../data/models/book_detail.dart';
 import '../../data/models/review.dart';
 import '../../data/services/books_api_service.dart';
@@ -513,6 +514,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
               const SizedBox(height: 44),
 
               _buildReviewsSection(),
+
+              const SizedBox(height: 44),
+              HomeBookRecommendationsSection(
+                key: ValueKey('similar-${widget.externalId}'),
+                userId: widget.userId,
+                referenceBookId: widget.externalId,
+                onOpenLists: () {},
+              ),
 
               const SizedBox(height: 50),
             ],

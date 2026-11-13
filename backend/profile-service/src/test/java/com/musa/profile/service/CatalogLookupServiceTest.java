@@ -243,9 +243,18 @@ class CatalogLookupServiceTest {
     }
 
     @Test
+    void debeResolverAlbumYEnviarToken() {
+        musicServer.expect(requestTo("http://music.test/api/music/ALBUM/album-test"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-prueba"))
+                .andRespond(withSuccess("{\"spotifyId\":\"album-test\",\"contentType\":\"ALBUM\",\"name\":\"Album\"}", MediaType.APPLICATION_JSON));
+        var result = service.resolve("ALBUM", "album-test", "token-prueba");
+        assertEquals(CatalogResolution.Status.AVAILABLE, result.resolutionStatus());
+    }
+
+    @Test
     void noDebeConsultarServiciosParaTiposNoAdmitidos() {
         var result = service.resolve(
-                "ALBUM", "album-test", "token-prueba"
+                "PODCAST", "podcast-test", "token-prueba"
         );
 
         assertEquals(

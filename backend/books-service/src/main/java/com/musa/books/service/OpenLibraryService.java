@@ -11,6 +11,7 @@ import com.musa.books.dto.OpenLibraryWorkDto;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.stereotype.Service;
+import com.musa.books.budget.ProviderBudget.BudgetExceeded;
 import org.springframework.web.client.RestClient;
 
 
@@ -79,6 +80,8 @@ public class OpenLibraryService {
                     englishQuery.trim()
             );
 
+        } catch (BudgetExceeded limited) {
+            throw limited;
         } catch (Exception e) {
 
             /*
@@ -266,7 +269,9 @@ private String findCoverFromEditions(
             }
         }
 
-    } catch (Exception e) {
+    } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
         /*
          * Una portada faltante no debe
@@ -420,7 +425,9 @@ private String findCoverFromEditions(
                                 OpenLibraryWorkDto.class
                         );
 
-            } catch (Exception e) {
+            } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
                 System.err.println(
                         "Error al consultar libro "
@@ -518,7 +525,9 @@ private String findCoverFromEditions(
                     );
                 }
 
-            } catch (Exception e) {
+            } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
                 /*
                 * Si Open Library falla al obtener

@@ -1,0 +1,17 @@
+[
+  {
+    "content_type": "SONG",
+    "spotify_id": "5b5cPscqVEMChvDqscVw26",
+    "reason": "misma obra/otra edición"
+  },
+  {
+    "content_type": "ALBUM",
+    "spotify_id": "3SXqs6UQiQyIOnk1TeodLo",
+    "reason": "sin correspondencia única"
+  },
+  {
+    "content_type": "ALBUM",
+    "spotify_id": "3AvPX1B1HiFROvYjLb5Qwi",
+    "reason": "sin correspondencia única"
+  }
+]
