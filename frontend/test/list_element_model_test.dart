@@ -57,10 +57,7 @@ void main() {
     final element = ListElementModel.fromJson(
       response(
         type: 'ARTIST',
-        content: {
-          'name': 'Artista de prueba',
-          'imageUrl': null,
-        },
+        content: {'name': 'Artista de prueba', 'imageUrl': null},
       ),
     );
 
@@ -73,10 +70,7 @@ void main() {
 
   test('Contenido temporalmente no disponible conserva su referencia', () {
     final element = ListElementModel.fromJson(
-      response(
-        type: 'BOOK',
-        status: 'UNAVAILABLE',
-      ),
+      response(type: 'BOOK', status: 'UNAVAILABLE'),
     );
 
     expect(element.isAvailable, isFalse);
@@ -90,18 +84,12 @@ void main() {
 
   test('Contenido inexistente muestra el mensaje correspondiente', () {
     final element = ListElementModel.fromJson(
-      response(
-        type: 'SONG',
-        status: 'NOT_FOUND',
-      ),
+      response(type: 'SONG', status: 'NOT_FOUND'),
     );
 
     expect(element.isAvailable, isFalse);
     expect(element.title, 'Canción');
-    expect(
-      element.statusMessage,
-      'Este contenido ya no está disponible.',
-    );
+    expect(element.statusMessage, 'Este contenido ya no está disponible.');
   });
 
   test('Respuesta anterior sin contenido sigue siendo compatible', () {
@@ -115,5 +103,16 @@ void main() {
     expect(element.resolutionStatus, 'UNAVAILABLE');
     expect(element.content, isNull);
     expect(element.title, 'Artista');
+  });
+  test('Album has its own label and artist subtitle', () {
+    const album = ListElementModel(
+      id: 'album',
+      elementType: 'ALBUM',
+      referenceId: 'id',
+      resolutionStatus: 'AVAILABLE',
+      content: {'artistName': 'Una artista'},
+    );
+    expect(album.title, 'Álbum');
+    expect(album.subtitle, 'Una artista');
   });
 }

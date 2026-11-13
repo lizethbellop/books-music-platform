@@ -40,7 +40,7 @@ public class CatalogLookupService {
         try {
             return switch (elementType) {
                 case "BOOK" -> resolveBook(referenceId, accessToken);
-                case "SONG", "ARTIST" ->
+                case "SONG", "ALBUM", "ARTIST" ->
                         resolveMusic(elementType, referenceId, accessToken);
                 default -> CatalogResolution.unavailable();
             };

@@ -8,8 +8,8 @@ public record AddPreferenceElementRequest(
 
         @NotBlank(message = "Element type is required")
         @Pattern(
-                regexp = "BOOK|SONG|ARTIST|AUTHOR",
-                message = "Element type must be BOOK, SONG, ARTIST or AUTHOR"
+                regexp = "BOOK|SONG|ALBUM|ARTIST|AUTHOR",
+                message = "Element type must be BOOK, SONG, ALBUM, ARTIST or AUTHOR"
         )
         String elementType,
 

@@ -122,7 +122,9 @@ class _PreferencesOnboardingScreenState
                 elementType: type,
                 referenceId: m.spotifyId,
                 title: m.name,
-                subtitle: type == 'SONG' ? m.artistName : 'Artista',
+                subtitle: type == 'SONG' || type == 'ALBUM'
+                    ? m.artistName
+                    : 'Artista',
                 imageUrl: m.imageUrl,
               ),
             )
@@ -284,7 +286,7 @@ class _PreferencesOnboardingScreenState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Elige libros, canciones o artistas para empezar a conocerte. Puedes cambiar tus preferencias después en tu perfil.',
+                  'Elige libros, canciones, álbumes o artistas para empezar a conocerte. Puedes cambiar tus preferencias después en tu perfil.',
                   style: AppTextStyles.body,
                   textAlign: TextAlign.center,
                 ),
@@ -296,6 +298,7 @@ class _PreferencesOnboardingScreenState
                     for (final entry in {
                       'BOOK': 'Libros',
                       'SONG': 'Canciones',
+                      'ALBUM': 'Álbumes',
                       'ARTIST': 'Artistas',
                     }.entries)
                       ChoiceChip(
@@ -322,6 +325,8 @@ class _PreferencesOnboardingScreenState
                             ? 'libros o autores'
                             : _type == 'SONG'
                             ? 'canciones'
+                            : _type == 'ALBUM'
+                            ? 'álbumes'
                             : 'artistas'}',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(

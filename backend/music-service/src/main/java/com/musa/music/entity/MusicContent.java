@@ -45,6 +45,9 @@ public class MusicContent {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "artwork_checked_at")
+    private LocalDateTime artworkCheckedAt;
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();

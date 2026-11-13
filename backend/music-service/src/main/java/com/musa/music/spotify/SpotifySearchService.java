@@ -14,10 +14,12 @@ import java.util.Map;
 public class SpotifySearchService {
 
     private final SpotifyAuthService spotifyAuthService;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
-    public SpotifySearchService(SpotifyAuthService spotifyAuthService) {
+    public SpotifySearchService(SpotifyAuthService spotifyAuthService,
+            @org.springframework.beans.factory.annotation.Qualifier("spotifyRestClient") RestClient client) {
         this.spotifyAuthService = spotifyAuthService;
+        this.restClient=client;
     }
 
     public List<MusicSearchItemResponse> search(String query) {
