@@ -1,6 +1,7 @@
 package com.musa.social.repository;
 
 import com.musa.social.entity.Post;
+import com.musa.social.entity.PostOrigin;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -17,7 +18,9 @@ public interface PostRepository
     );
 
     List<Post> findByAuthorIdAndDeletedAtIsNullOrderByCreatedAtDesc(
-            UUID authorId
+            UUID authorId,
+            PostOrigin postOrigin
+
     );
 
     List<Post> findByCommunityIdAndDeletedAtIsNullOrderByCreatedAtDesc(
@@ -38,4 +41,10 @@ public interface PostRepository
     List<Post> findByDeletedAtIsNotNullAndDeletedAtBefore(
             OffsetDateTime limit
     );
+    
+    List<Post> findByAuthorIdAndPostOriginAndDeletedAtIsNullOrderByCreatedAtDesc(
+        UUID authorId,
+        PostOrigin postOrigin
+    );
+
 }

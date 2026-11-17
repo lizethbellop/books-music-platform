@@ -54,4 +54,8 @@ public interface PostService {
     List<PostResponse> getPostsByCommunity(
             UUID communityId
     );
+    
+    List<PostResponse> getUserActivity(
+            UUID userId
+        );
 }

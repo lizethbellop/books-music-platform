@@ -256,12 +256,24 @@ public class PostServiceImpl implements PostService {
     public List<PostResponse> getPostsByUser(UUID userId) {
 
         return postRepository
-                .findByAuthorIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId)
+                .findByAuthorIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId,PostOrigin.ACTIVITY)
                 .stream()
                 .map(PostMapper::toResponse)
                 .toList();
     }
-
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getUserActivity(UUID userId) {
+        return postRepository
+                .findByAuthorIdAndPostOriginAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        userId,
+                        PostOrigin.ACTIVITY
+                )
+                .stream()
+                .map(PostMapper::toResponse)
+                .toList();
+        }
 
     // CU-55 - Consultar publicaciones por comunidad
     @Override
