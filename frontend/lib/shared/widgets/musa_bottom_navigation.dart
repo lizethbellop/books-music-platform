@@ -48,6 +48,11 @@ class MusaBottomNavigation extends StatelessWidget {
           selectedIcon: Icon(Icons.menu_book),
           label: 'Libros',
         ),
+        const NavigationDestination(
+          icon: Icon(Icons.chat_bubble_outline),
+          selectedIcon: Icon(Icons.chat_bubble),
+          label: 'Mensajes',
+        ),
         NavigationDestination(
           icon: MusaProfileAvatar(imageUrl: profilePictureUrl, radius: 12),
           selectedIcon: MusaProfileAvatar(

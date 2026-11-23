@@ -211,3 +211,6 @@ __pycache__/
 .ipynb_checkpoints/
 # IDE compiled copies can include local credentials.
 **/bin/
+
+# Plantilla pública de RabbitMQ; las credenciales reales siguen ignoradas.
+!backend/.env.rabbitmq.example

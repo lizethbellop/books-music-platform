@@ -14,14 +14,23 @@ $$;
 CREATE TABLE IF NOT EXISTS public.conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type VARCHAR(10) NOT NULL DEFAULT 'PRIVATE',
+    name VARCHAR(100),
+    owner_id UUID,
+    closed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT conversations_type_check CHECK (type IN ('PRIVATE', 'GROUP'))
+    CONSTRAINT conversations_type_check CHECK (type IN ('PRIVATE', 'GROUP')),
+    CONSTRAINT conversations_group_metadata_check CHECK (
+        (type = 'PRIVATE' AND name IS NULL AND owner_id IS NULL AND closed_at IS NULL)
+        OR (type = 'GROUP' AND name IS NOT NULL AND name ~ '[^[:space:]]'
+            AND (owner_id IS NOT NULL OR closed_at IS NOT NULL))
+    )
 );
 
 CREATE TABLE IF NOT EXISTS public.conversation_participants (
     conversation_id UUID NOT NULL,
     user_id UUID NOT NULL,
     joined_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT conversation_participants_pkey PRIMARY KEY (conversation_id, user_id),
     CONSTRAINT conversation_participants_conversation_fk
         FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE
@@ -51,5 +60,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_conversation_created
 -- Comprobación de la FK al cambiar/eliminar participantes.
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_sender
     ON public.messages (conversation_id, sender_id);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_participants_active_user
+    ON public.conversation_participants (user_id, conversation_id) WHERE left_at IS NULL;
 
 COMMIT;

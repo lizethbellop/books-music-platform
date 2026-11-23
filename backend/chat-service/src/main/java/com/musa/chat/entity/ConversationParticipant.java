@@ -22,11 +22,14 @@ public class ConversationParticipant {
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
-    @Column(name = "joined_at", nullable = false, updatable = false)
+    @Column(name = "joined_at", nullable = false)
     private Instant joinedAt;
+
+    @Column(name = "left_at")
+    private Instant leftAt;
 
     @PrePersist
     void initializeJoinedAt() {
-        if (joinedAt == null) joinedAt = Instant.now();
+        if (joinedAt == null) joinedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     }
 }

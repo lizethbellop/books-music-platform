@@ -50,6 +50,7 @@ void main() {
       for (final name in [
         'Música',
         'Libros',
+        'Mensajes',
         'Mi perfil',
         'Social',
         'Comunidades',
@@ -146,6 +147,7 @@ void main() {
         'Explorar',
         'Música',
         'Libros',
+        'Mensajes',
         'Perfil',
         'Inicio',
       ]) {

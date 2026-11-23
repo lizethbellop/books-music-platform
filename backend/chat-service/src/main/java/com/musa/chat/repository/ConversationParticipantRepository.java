@@ -10,6 +10,9 @@ import java.util.UUID;
 
 public interface ConversationParticipantRepository
         extends JpaRepository<ConversationParticipant, ConversationParticipantId> {
+    java.util.Optional<ConversationParticipant> findByConversationIdAndUserIdAndLeftAtIsNull(UUID conversationId, UUID userId);
+    List<ConversationParticipant> findByConversationIdAndLeftAtIsNullOrderByUserIdAsc(UUID conversationId);
+    boolean existsByConversationIdAndUserIdAndLeftAtIsNull(UUID conversationId, UUID userId);
     boolean existsByConversationIdAndUserId(UUID conversationId, UUID userId);
     List<ConversationParticipant> findByConversationIdOrderByUserIdAsc(UUID conversationId);
     Page<ConversationParticipant> findByUserIdOrderByJoinedAtDescConversationIdDesc(

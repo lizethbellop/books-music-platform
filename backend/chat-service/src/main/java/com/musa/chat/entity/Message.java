@@ -33,6 +33,6 @@ public class Message {
 
     @PrePersist
     void initializeCreatedAt() {
-        if (createdAt == null) createdAt = Instant.now();
+        if (createdAt == null) createdAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     }
 }
