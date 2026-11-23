@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_section.dart';
+import '../../features/chat/presentation/messages_page.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -52,13 +53,9 @@ class _AppShellState extends State<AppShell> {
       onOpenLists: () => _select(AppSection.profile),
     ),
 
-    AppSection.music => MusicHomePage(
-      userId: widget.userId,
-    ),
+    AppSection.music => MusicHomePage(userId: widget.userId),
 
-    AppSection.books => BooksHomePage(
-      userId: widget.userId,
-    ),
+    AppSection.books => BooksHomePage(userId: widget.userId),
     AppSection.profile => ProfilePage(
       userId: widget.userId,
       embedded: true,
@@ -67,8 +64,9 @@ class _AppShellState extends State<AppShell> {
       },
     ),
 
-    AppSection.statistics =>
-      widget.statisticsPage ?? const StatisticsPage(),
+    AppSection.messages => const MessagesPage(),
+
+    AppSection.statistics => widget.statisticsPage ?? const StatisticsPage(),
 
     _ => Center(
       child: Text(
@@ -78,9 +76,7 @@ class _AppShellState extends State<AppShell> {
           AppSection.communities => 'Comunidades',
           _ => 'Pendiente',
         }} — pendiente',
-        style: const TextStyle(
-          color: AppColors.ink,
-        ),
+        style: const TextStyle(color: AppColors.ink),
       ),
     ),
   };
@@ -96,19 +92,19 @@ class _AppShellState extends State<AppShell> {
         AppSection.music => MusaDestination.music,
         AppSection.books => MusaDestination.books,
         AppSection.profile => MusaDestination.profile,
+        AppSection.messages => MusaDestination.messages,
         AppSection.explore => MusaDestination.explore,
         _ => MusaDestination.home,
       },
       onDestinationSelected: (destination) {
-        _select(
-          switch (destination) {
-            MusaDestination.home => AppSection.home,
-            MusaDestination.explore => AppSection.explore,
-            MusaDestination.music => AppSection.music,
-            MusaDestination.books => AppSection.books,
-            MusaDestination.profile => AppSection.profile,
-          },
-        );
+        _select(switch (destination) {
+          MusaDestination.home => AppSection.home,
+          MusaDestination.explore => AppSection.explore,
+          MusaDestination.music => AppSection.music,
+          MusaDestination.books => AppSection.books,
+          MusaDestination.profile => AppSection.profile,
+          MusaDestination.messages => AppSection.messages,
+        });
       },
       child: _page(),
     );

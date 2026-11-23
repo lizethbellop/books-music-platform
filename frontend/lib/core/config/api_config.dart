@@ -11,5 +11,8 @@ abstract final class ApiConfig {
   static const String recommendationsUrl = '$gatewayUrl/api/recommendations';
   static const String profileUrl = '$gatewayUrl/api/profiles';
   static const String statisticsUrl = '$gatewayUrl/api/statistics';
+  static const String notificationsUrl = '$gatewayUrl/api/v1/notifications';
+  static const String chatUrl = '$gatewayUrl/api/v1/chat';
+  static const String usersUrl = '$gatewayUrl/api/v1/users';
   static const String usernamesUrl = '$gatewayUrl/api/v1/users/usernames';
 }

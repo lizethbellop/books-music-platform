@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailWithRole(@Param("email") String email);
 
     Optional<User> findByEmail(String email);
+    java.util.List<User> findByIsActiveTrueAndUsernameStartingWithIgnoreCaseOrderByUsernameAsc(
+            String prefix, org.springframework.data.domain.Pageable pageable);
+
     boolean existsByEmail(String email);
     boolean existsByUsernameIgnoreCase(String username);
 }

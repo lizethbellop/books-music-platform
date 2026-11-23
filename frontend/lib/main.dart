@@ -125,6 +125,7 @@ class _MusaAppState extends State<MusaApp> {
       AppRoutes.home: (_) => _authenticatedPage(AppSection.home),
       AppRoutes.music: (_) => _authenticatedPage(AppSection.music),
       AppRoutes.books: (_) => _authenticatedPage(AppSection.books),
+      AppRoutes.messages: (_) => _authenticatedPage(AppSection.messages),
       AppRoutes.profile: (_) => _authenticatedPage(AppSection.profile),
     },
   );

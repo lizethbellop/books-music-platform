@@ -24,6 +24,15 @@ public class Conversation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "name", length = 100)
+    private String name;
+
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
+    @Column(name = "closed_at")
+    private Instant closedAt;
+
     @PrePersist
     void initializeCreatedAt() {
         if (createdAt == null) createdAt = Instant.now();

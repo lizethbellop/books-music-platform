@@ -40,6 +40,10 @@ class HomePage extends StatelessWidget {
         Navigator.of(context).pushReplacementNamed(AppRoutes.books);
         return;
 
+      case MusaDestination.messages:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.messages);
+        return;
+
       case MusaDestination.explore:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
