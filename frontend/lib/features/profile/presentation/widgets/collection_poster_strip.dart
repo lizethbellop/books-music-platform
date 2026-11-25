@@ -35,6 +35,8 @@ class CollectionPosterStrip extends StatelessWidget {
                   ? Icons.menu_book_outlined
                   : artist
                   ? Icons.person_outline
+                  : element.elementType == 'ALBUM'
+                  ? Icons.album_outlined
                   : Icons.music_note,
               size: 40,
               color: AppColors.ink,
@@ -90,6 +92,8 @@ class CollectionPosterStrip extends StatelessWidget {
                         ? 'Libro'
                         : artist
                         ? 'Artista'
+                        : element.elementType == 'ALBUM'
+                        ? 'Álbum'
                         : 'Canción'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

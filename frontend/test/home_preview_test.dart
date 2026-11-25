@@ -17,7 +17,13 @@ void main() {
   testWidgets(
     'Home contains book recommendations inside the existing navigation',
     (tester) async {
-      tester.view.physicalSize = const Size(1366, 900);
+      tester.view.physicalSize = Size(
+        1366,
+        const int.fromEnvironment(
+          'MUSA_PREVIEW_HEIGHT',
+          defaultValue: 900,
+        ).toDouble(),
+      );
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -46,48 +52,68 @@ void main() {
           }
         });
       }
+      const catalogPreviewPath = String.fromEnvironment('MUSA_CATALOG_PREVIEW');
+      final catalogPreview = catalogPreviewPath.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(File(catalogPreviewPath).readAsStringSync())
+                as Map<String, dynamic>;
       final api = RecommendationsApiService(
         getAccessToken: () async => 'preview-token',
         client: MockClient(
-          (_) async => http.Response(
-            jsonEncode({
-              'seed_count': 4,
-              'partial': false,
-              'items': [
-                {
-                  'externalId': 'OL1W',
-                  'title': 'Catching Fire',
-                  'authors': ['Suzanne Collins'],
-                  'reason': 'Porque guardaste «The Hunger Games»',
-                },
-                {
-                  'externalId': 'OL2W',
-                  'title': 'A Wizard of Earthsea',
-                  'authors': ['Ursula K. Le Guin'],
-                  'reason': 'Porque guardaste «Harry Potter»',
-                },
-                {
-                  'externalId': 'OL3W',
-                  'title': 'The Hobbit',
-                  'authors': ['J. R. R. Tolkien'],
-                  'reason': 'Porque guardaste «Harry Potter»',
-                },
-                {
-                  'externalId': 'OL4W',
-                  'title': 'The Left Hand of Darkness',
-                  'authors': ['Ursula K. Le Guin'],
-                  'reason': 'Porque guardaste «Dune»',
-                },
-                {
-                  'externalId': 'OL5W',
-                  'title': 'The Night Circus',
-                  'authors': ['Erin Morgenstern'],
-                  'reason': 'Porque guardaste «Harry Potter»',
-                },
-              ],
-            }),
-            200,
-          ),
+          (request) async => catalogPreview.isNotEmpty
+              ? http.Response(
+                  jsonEncode(
+                    catalogPreview[request.url.path.contains('/music/')
+                        ? request.url.path.split('/')[4]
+                        : 'books'],
+                  ),
+                  200,
+                  headers: {'content-type': 'application/json; charset=utf-8'},
+                )
+              : request.url.path.contains('/music/')
+              ? http.Response(
+                  jsonEncode({'seed_count': 0, 'mode': 'explore', 'items': []}),
+                  200,
+                )
+              : http.Response(
+                  jsonEncode({
+                    'seed_count': 4,
+                    'partial': false,
+                    'items': [
+                      {
+                        'externalId': 'OL1W',
+                        'title': 'Catching Fire',
+                        'authors': ['Suzanne Collins'],
+                        'reason': 'Porque guardaste «The Hunger Games»',
+                      },
+                      {
+                        'externalId': 'OL2W',
+                        'title': 'A Wizard of Earthsea',
+                        'authors': ['Ursula K. Le Guin'],
+                        'reason': 'Porque guardaste «Harry Potter»',
+                      },
+                      {
+                        'externalId': 'OL3W',
+                        'title': 'The Hobbit',
+                        'authors': ['J. R. R. Tolkien'],
+                        'reason': 'Porque guardaste «Harry Potter»',
+                      },
+                      {
+                        'externalId': 'OL4W',
+                        'title': 'The Left Hand of Darkness',
+                        'authors': ['Ursula K. Le Guin'],
+                        'reason': 'Porque guardaste «Dune»',
+                      },
+                      {
+                        'externalId': 'OL5W',
+                        'title': 'The Night Circus',
+                        'authors': ['Erin Morgenstern'],
+                        'reason': 'Porque guardaste «Harry Potter»',
+                      },
+                    ],
+                  }),
+                  200,
+                ),
         ),
       );
       addTearDown(api.close);
@@ -113,8 +139,19 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Inicio'), findsWidgets);
       expect(find.text('Lecturas para ti'), findsOneWidget);
-      expect(find.text('Catching Fire'), findsOneWidget);
+      expect(
+        find.text(
+          catalogPreview.isEmpty
+              ? 'Catching Fire'
+              : catalogPreview['books']['items'][0]['title'] as String,
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Todavía no hay contenido'), findsNothing);
+      if (catalogPreview.isNotEmpty) {
+        expect(find.text('Tu siguiente canción'), findsOneWidget);
+        expect(find.text('No pudimos cargar estas sugerencias.'), findsNothing);
+      }
       expect(tester.takeException(), isNull);
       const output = String.fromEnvironment('MUSA_PREVIEW_PATH');
       if (output.isNotEmpty) {

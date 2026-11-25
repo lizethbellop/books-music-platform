@@ -18,6 +18,7 @@ import java.util.UUID;
 public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     @Override
     @Transactional
@@ -43,7 +44,9 @@ public class FollowServiceImpl implements FollowService {
             .followedId(followedId)
             .build();
 
-        return followRepository.save(follow);
+        Follow saved = followRepository.save(follow);
+        events.publishEvent(new com.musa.social.messaging.UserFollowedEvent(followerId, followedId));
+        return saved;
     }
 
     @Override

@@ -5,6 +5,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/musa_destination.dart';
 import '../../../../shared/widgets/musa_navigation_shell.dart';
 import '../widgets/home_book_recommendations_section.dart';
+import '../widgets/home_music_recommendations_section.dart';
+import '../../data/models/home_music_recommendations.dart';
 import '../../data/services/recommendations_api_service.dart';
 
 class HomePage extends StatelessWidget {
@@ -36,6 +38,10 @@ class HomePage extends StatelessWidget {
 
       case MusaDestination.books:
         Navigator.of(context).pushReplacementNamed(AppRoutes.books);
+        return;
+
+      case MusaDestination.messages:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.messages);
         return;
 
       case MusaDestination.explore:
@@ -78,7 +84,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 Text(
-                  'Tu próxima lectura empieza con lo que guardas.',
+                  'Historias y música a partir de lo que te gusta.',
                   style: AppTextStyles.secondary,
                 ),
 
@@ -93,6 +99,21 @@ class HomePage extends StatelessWidget {
                       () =>
                           _selectDestination(context, MusaDestination.profile),
                 ),
+                for (final kind in MusicRecommendationKind.values) ...[
+                  const SizedBox(height: 36),
+                  HomeMusicRecommendationsSection(
+                    key: ValueKey('$userId-${kind.name}'),
+                    userId: userId,
+                    kind: kind,
+                    api: recommendationsApi,
+                    onOpenLists:
+                        onOpenLists ??
+                        () => _selectDestination(
+                          context,
+                          MusaDestination.profile,
+                        ),
+                  ),
+                ],
               ],
             ),
           );

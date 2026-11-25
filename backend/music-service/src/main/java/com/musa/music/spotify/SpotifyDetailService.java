@@ -13,12 +13,14 @@ import java.util.Map;
 public class SpotifyDetailService {
 
     private final SpotifyAuthService spotifyAuthService;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
     public SpotifyDetailService(
-            SpotifyAuthService spotifyAuthService
+            SpotifyAuthService spotifyAuthService,
+            @org.springframework.beans.factory.annotation.Qualifier("spotifyRestClient") RestClient client
     ) {
         this.spotifyAuthService = spotifyAuthService;
+        this.restClient=client;
     }
 
     public MusicDetailResponse getDetail(
@@ -56,7 +58,18 @@ public class SpotifyDetailService {
         String name = (String) response.get("name");
         String artistName = getFirstArtistName(response);
 
-        Map album = (Map) response.get("album");
+        Map presentation=response;
+        if(OriginalArtwork.needsOriginal(response) && !OriginalArtwork.isrc(response).isBlank()) {
+            Map search=restClient.get().uri(builder->builder.scheme("https").host("api.spotify.com")
+                .path("/v1/search").queryParam("q","isrc:"+OriginalArtwork.isrc(response))
+                .queryParam("type","track").queryParam("market","MX").queryParam("limit",10).build())
+                .header(HttpHeaders.AUTHORIZATION,"Bearer "+token).retrieve().body(Map.class);
+            if(search!=null && search.get("tracks") instanceof Map tracks && tracks.get("items") instanceof List<?> items) {
+                presentation=OriginalArtwork.choose(response,items.stream().filter(Map.class::isInstance).map(Map.class::cast).toList());
+            }
+        }
+
+        Map album = (Map) presentation.get("album");
 
         String imageUrl = getFirstImage(album);
         String releaseDate = album != null

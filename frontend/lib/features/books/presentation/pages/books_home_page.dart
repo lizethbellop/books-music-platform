@@ -5,30 +5,32 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/book_search_item.dart';
 import '../../data/services/books_api_service.dart';
 import '../widgets/book_filter_chip.dart';
+import '../../../home/presentation/widgets/home_book_recommendations_section.dart';
+import '../../../home/data/services/recommendations_api_service.dart';
 import 'book_detail_page.dart';
 
 class BooksHomePage extends StatefulWidget {
   final String userId;
+  final RecommendationsApiService? recommendationsApi;
 
-  const BooksHomePage({super.key, required this.userId});
+  const BooksHomePage({
+    super.key,
+    required this.userId,
+    this.recommendationsApi,
+  });
 
   @override
   State<BooksHomePage> createState() => _BooksHomePageState();
 }
 
 class _BooksHomePageState extends State<BooksHomePage> {
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
-  final BooksApiService _booksApiService =
-      BooksApiService();
-
+  final BooksApiService _booksApiService = BooksApiService();
 
   List<BookSearchItem> _results = [];
   List<BookSearchItem> _libraryResults = [];
   List<BookSearchItem> _favoriteResults = [];
-
-  List<BookSearchItem> _exploreBooks = [];
 
   bool _isLoading = false;
   bool _hasSearched = false;
@@ -40,102 +42,68 @@ class _BooksHomePageState extends State<BooksHomePage> {
   @override
   void initState() {
     super.initState();
-    _loadExploreBooks();
+    _showRecommendations();
   }
 
-Future<void> _searchBooks() async {
-  final query = _searchController.text.trim();
+  Future<void> _searchBooks() async {
+    final query = _searchController.text.trim();
 
-  if (query.isEmpty) {
+    if (query.isEmpty) {
+      setState(() {
+        _selectedFilter = 'Todos';
+        _hasSearched = false;
+        _results = [];
+        _errorMessage = null;
+      });
+
+      await _showRecommendations();
+
+      return;
+    }
+
     setState(() {
       _selectedFilter = 'Todos';
-      _hasSearched = false;
-      _results = [];
+      _isLoading = true;
+      _hasSearched = true;
       _errorMessage = null;
     });
 
-    if (_exploreBooks.isEmpty) {
-      await _loadExploreBooks();
+    try {
+      final results = await _booksApiService.searchBooks(query);
+
+      if (!mounted) return;
+
+      setState(() {
+        _results = results;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      debugPrint('ERROR AL BUSCAR LIBROS: $e');
+
+      setState(() {
+        _results = [];
+        _errorMessage = 'No se pudo realizar la búsqueda.';
+      });
     }
 
-    return;
-  }
-
-  setState(() {
-    _selectedFilter = 'Todos';
-    _isLoading = true;
-    _hasSearched = true;
-    _errorMessage = null;
-  });
-
-  try {
-    final results =
-        await _booksApiService.searchBooks(query);
-
     if (!mounted) return;
 
     setState(() {
-      _results = results;
-    });
-  } catch (e) {
-    if (!mounted) return;
-
-    debugPrint(
-      'ERROR AL BUSCAR LIBROS: $e',
-    );
-
-    setState(() {
-      _results = [];
-      _errorMessage =
-          'No se pudo realizar la búsqueda.';
+      _isLoading = false;
     });
   }
 
-  if (!mounted) return;
-
-  setState(() {
-    _isLoading = false;
-  });
-}
-
-Future<void> _loadExploreBooks() async {
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
-
-  try {
-    final books =
-        await _booksApiService.getExploreBooks();
-
+  Future<void> _showRecommendations() async {
+    // The default view uses the personalized catalog, not a generic API search.
     if (!mounted) return;
-
     setState(() {
-      _exploreBooks = books;
-    });
-  } catch (e) {
-    if (!mounted) return;
-
-    debugPrint(
-      'ERROR AL CARGAR EXPLORAR: $e',
-    );
-
-    setState(() {
-      _errorMessage =
-          'No se pudo cargar el catálogo de libros.';
+      _isLoading = false;
+      _errorMessage = null;
     });
   }
 
-  if (!mounted) return;
-
-  setState(() {
-    _isLoading = false;
-  });
-}
-
-  Future<void> _selectFilter(
-    String filter,
-  ) async {
+  Future<void> _selectFilter(String filter) async {
     if (filter == 'Todos') {
       _searchController.clear();
 
@@ -147,9 +115,7 @@ Future<void> _loadExploreBooks() async {
         _isLoading = false;
       });
 
-      if (_exploreBooks.isEmpty) {
-        await _loadExploreBooks();
-      }
+      await _showRecommendations();
 
       return;
     }
@@ -170,10 +136,7 @@ Future<void> _loadExploreBooks() async {
 
     try {
       if (_selectedFilter == 'Favoritos') {
-        final favorites =
-            await _booksApiService.getFavorites(
-          widget.userId,
-        );
+        final favorites = await _booksApiService.getFavorites(widget.userId);
 
         if (!mounted) return;
 
@@ -181,26 +144,16 @@ Future<void> _loadExploreBooks() async {
           _favoriteResults = favorites
               .map(
                 (favorite) => BookSearchItem(
-                  externalId:
-                      favorite.externalId,
+                  externalId: favorite.externalId,
                   title: favorite.title,
-                  authors:
-                      favorite.author == null
-                          ? []
-                          : [
-                              favorite.author!,
-                            ],
-                  coverUrl:
-                      favorite.coverUrl,
+                  authors: favorite.author == null ? [] : [favorite.author!],
+                  coverUrl: favorite.coverUrl,
                 ),
               )
               .toList();
         });
       } else {
-        final library =
-            await _booksApiService.getLibrary(
-          widget.userId,
-        );
+        final library = await _booksApiService.getLibrary(widget.userId);
 
         if (!mounted) return;
 
@@ -225,24 +178,13 @@ Future<void> _loadExploreBooks() async {
 
         setState(() {
           _libraryResults = library
-              .where(
-                (book) =>
-                    book.readingStatus ==
-                    status,
-              )
+              .where((book) => book.readingStatus == status)
               .map(
                 (book) => BookSearchItem(
-                  externalId:
-                      book.externalId,
+                  externalId: book.externalId,
                   title: book.title,
-                  authors:
-                      book.author == null
-                          ? []
-                          : [
-                              book.author!,
-                            ],
-                  coverUrl:
-                      book.coverUrl,
+                  authors: book.author == null ? [] : [book.author!],
+                  coverUrl: book.coverUrl,
                 ),
               )
               .toList();
@@ -251,13 +193,10 @@ Future<void> _loadExploreBooks() async {
     } catch (e) {
       if (!mounted) return;
 
-      debugPrint(
-        'ERROR AL CARGAR FILTRO: $e',
-      );
+      debugPrint('ERROR AL CARGAR FILTRO: $e');
 
       setState(() {
-        _errorMessage =
-            'No se pudo cargar esta sección.';
+        _errorMessage = 'No se pudo cargar esta sección.';
       });
     }
 
@@ -282,36 +221,24 @@ Future<void> _loadExploreBooks() async {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Libros',
-                style: AppTextStyles.pageTitle,
-              ),
+              Text('Libros', style: AppTextStyles.pageTitle),
 
               const SizedBox(height: 24),
 
               TextField(
                 controller: _searchController,
-                textInputAction:
-                    TextInputAction.search,
+                textInputAction: TextInputAction.search,
                 onSubmitted: (_) {
                   _searchBooks();
                 },
                 decoration: InputDecoration(
-                  hintText:
-                      'Buscar libros o autores...',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.ink,
-                  ),
+                  hintText: 'Buscar libros o autores...',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.ink),
                   suffixIcon: IconButton(
                     onPressed: _searchBooks,
-                    icon: const Icon(
-                      Icons.arrow_forward,
-                      color: AppColors.ink,
-                    ),
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.ink),
                   ),
                 ),
               ),
@@ -324,61 +251,41 @@ Future<void> _loadExploreBooks() async {
                 children: [
                   BookFilterChip(
                     label: 'Todos',
-                    selected:
-                        _selectedFilter ==
-                        'Todos',
+                    selected: _selectedFilter == 'Todos',
                     onTap: () {
-                      _selectFilter(
-                        'Todos',
-                      );
+                      _selectFilter('Todos');
                     },
                   ),
 
                   BookFilterChip(
                     label: 'Leyendo',
-                    selected:
-                        _selectedFilter ==
-                        'Leyendo',
+                    selected: _selectedFilter == 'Leyendo',
                     onTap: () {
-                      _selectFilter(
-                        'Leyendo',
-                      );
+                      _selectFilter('Leyendo');
                     },
                   ),
 
                   BookFilterChip(
                     label: 'Por leer',
-                    selected:
-                        _selectedFilter ==
-                        'Por leer',
+                    selected: _selectedFilter == 'Por leer',
                     onTap: () {
-                      _selectFilter(
-                        'Por leer',
-                      );
+                      _selectFilter('Por leer');
                     },
                   ),
 
                   BookFilterChip(
                     label: 'Leídos',
-                    selected:
-                        _selectedFilter ==
-                        'Leídos',
+                    selected: _selectedFilter == 'Leídos',
                     onTap: () {
-                      _selectFilter(
-                        'Leídos',
-                      );
+                      _selectFilter('Leídos');
                     },
                   ),
 
                   BookFilterChip(
                     label: 'Favoritos',
-                    selected:
-                        _selectedFilter ==
-                        'Favoritos',
+                    selected: _selectedFilter == 'Favoritos',
                     onTap: () {
-                      _selectFilter(
-                        'Favoritos',
-                      );
+                      _selectFilter('Favoritos');
                     },
                   ),
                 ],
@@ -398,20 +305,14 @@ Future<void> _loadExploreBooks() async {
     if (_isLoading) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: 30,
-          ),
-          child:
-              CircularProgressIndicator(),
+          padding: EdgeInsets.symmetric(vertical: 30),
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Text(
-        _errorMessage!,
-        style: AppTextStyles.secondary,
-      );
+      return Text(_errorMessage!, style: AppTextStyles.secondary);
     }
 
     if (_selectedFilter == 'Leyendo' ||
@@ -420,73 +321,49 @@ Future<void> _loadExploreBooks() async {
       if (_libraryResults.isEmpty) {
         return Text(
           'No tienes libros en esta sección.',
-          style:
-              AppTextStyles.secondary,
+          style: AppTextStyles.secondary,
         );
       }
 
-      return _buildBookGrid(
-        _libraryResults,
-        _selectedFilter,
-      );
+      return _buildBookGrid(_libraryResults, _selectedFilter);
     }
 
     if (_selectedFilter == 'Favoritos') {
       if (_favoriteResults.isEmpty) {
         return Text(
           'Todavía no tienes libros favoritos.',
-          style:
-              AppTextStyles.secondary,
-        );
-      }
-
-      return _buildBookGrid(
-        _favoriteResults,
-        'Favoritos',
-      );
-    }
-
-    if (!_hasSearched) {
-      if (_exploreBooks.isEmpty) {
-        return Text(
-          'No hay libros disponibles para explorar.',
           style: AppTextStyles.secondary,
         );
       }
 
-      return _buildBookGrid(
-        _exploreBooks,
-        'Explorar libros',
+      return _buildBookGrid(_favoriteResults, 'Favoritos');
+    }
+
+    if (!_hasSearched) {
+      return HomeBookRecommendationsSection(
+        key: ValueKey('books-catalog-${widget.userId}'),
+        userId: widget.userId,
+        allowRefresh: false,
+        api: widget.recommendationsApi,
+        onOpenLists: () => _selectFilter('Favoritos'),
       );
     }
 
     if (_results.isEmpty) {
       return Text(
         'No se encontraron resultados.',
-        style:
-            AppTextStyles.secondary,
+        style: AppTextStyles.secondary,
       );
     }
 
-    return _buildBookGrid(
-      _results,
-      'Resultados',
-    );
+    return _buildBookGrid(_results, 'Resultados');
   }
 
-  Widget _buildBookGrid(
-    List<BookSearchItem> books,
-    String title,
-  ) {
+  Widget _buildBookGrid(List<BookSearchItem> books, String title) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style:
-              AppTextStyles.sectionTitle,
-        ),
+        Text(title, style: AppTextStyles.sectionTitle),
 
         const SizedBox(height: 16),
 
@@ -494,13 +371,7 @@ Future<void> _loadExploreBooks() async {
           spacing: 16,
           runSpacing: 16,
           children: books
-              .map(
-                (book) =>
-                    _BookResultCard(
-                  book: book,
-                  userId: widget.userId,
-                ),
-              )
+              .map((book) => _BookResultCard(book: book, userId: widget.userId))
               .toList(),
         ),
       ],
@@ -508,110 +379,71 @@ Future<void> _loadExploreBooks() async {
   }
 }
 
-class _BookResultCard
-    extends StatelessWidget {
+class _BookResultCard extends StatelessWidget {
   final BookSearchItem book;
   final String userId;
 
-  const _BookResultCard({
-    required this.book,
-    required this.userId,
-  });
+  const _BookResultCard({required this.book, required this.userId});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 210,
       child: Card(
-        clipBehavior:
-            Clip.antiAlias,
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) =>
-                    BookDetailPage(
-                  userId: userId,
-                  externalId:
-                      book.externalId,
-                ),
+                    BookDetailPage(userId: userId, externalId: book.externalId),
               ),
             );
           },
           child: Padding(
-            padding:
-                const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AspectRatio(
                   aspectRatio: 2 / 3,
-                  child:
-                      book.coverUrl !=
-                                  null &&
-                              book.coverUrl!
-                                  .isNotEmpty
-                          ? Image.network(
-                              book.coverUrl!,
-                              fit:
-                                  BoxFit.cover,
-                              errorBuilder: (
-                                context,
-                                error,
-                                stackTrace,
-                              ) {
-                                return _placeholder();
-                              },
-                            )
-                          : _placeholder(),
+                  child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+                      ? Image.network(
+                          book.coverUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _placeholder();
+                          },
+                        )
+                      : _placeholder(),
                 ),
 
-                const SizedBox(
-                  height: 12,
-                ),
+                const SizedBox(height: 12),
 
                 Text(
                   book.title,
                   maxLines: 2,
-                  overflow:
-                      TextOverflow
-                          .ellipsis,
-                  style:
-                      AppTextStyles
-                          .cardTitle,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.cardTitle,
                 ),
 
-                const SizedBox(
-                  height: 4,
-                ),
+                const SizedBox(height: 4),
 
                 Text(
                   book.authors.isEmpty
                       ? 'Autor desconocido'
-                      : book.authors
-                          .join(', '),
+                      : book.authors.join(', '),
                   maxLines: 2,
-                  overflow:
-                      TextOverflow
-                          .ellipsis,
-                  style:
-                      AppTextStyles
-                          .secondary,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.secondary,
                 ),
 
-                if (book
-                        .firstPublishYear !=
-                    null) ...[
-                  const SizedBox(
-                    height: 4,
-                  ),
+                if (book.firstPublishYear != null) ...[
+                  const SizedBox(height: 4),
                   Text(
                     '${book.firstPublishYear}',
-                    style:
-                        AppTextStyles
-                            .secondary,
+                    style: AppTextStyles.secondary,
                   ),
                 ],
               ],
@@ -626,11 +458,7 @@ class _BookResultCard
     return Container(
       color: AppColors.lilac,
       child: const Center(
-        child: Icon(
-          Icons.menu_book_outlined,
-          size: 44,
-          color: AppColors.ink,
-        ),
+        child: Icon(Icons.menu_book_outlined, size: 44, color: AppColors.ink),
       ),
     );
   }

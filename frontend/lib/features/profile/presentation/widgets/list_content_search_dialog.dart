@@ -25,22 +25,17 @@ class ListContentSearchDialog extends StatefulWidget {
   final BooksApiService? booksApi;
   final MusicApiService? musicApi;
 
-  const ListContentSearchDialog({
-    super.key,
-    this.booksApi,
-    this.musicApi,
-  });
+  const ListContentSearchDialog({super.key, this.booksApi, this.musicApi});
 
   @override
   State<ListContentSearchDialog> createState() =>
       _ListContentSearchDialogState();
 }
 
-class _ListContentSearchDialogState
-    extends State<ListContentSearchDialog> {
+class _ListContentSearchDialogState extends State<ListContentSearchDialog> {
   final _queryController = TextEditingController();
   late final _booksApi = widget.booksApi ?? BooksApiService();
-late final _musicApi = widget.musicApi ?? MusicApiService();
+  late final _musicApi = widget.musicApi ?? MusicApiService();
 
   String _elementType = 'BOOK';
   List<ListContentSelection> _results = [];
@@ -87,23 +82,19 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
             elementType: 'BOOK',
             referenceId: book.externalId,
             title: book.title,
-            subtitle: book.authors.isEmpty
-                ? null
-                : book.authors.join(', '),
+            subtitle: book.authors.isEmpty ? null : book.authors.join(', '),
             imageUrl: book.coverUrl,
           );
         }).toList();
       } else {
         final music = await _musicApi.searchMusic(query);
 
-        results = music
-            .where((item) => item.contentType == type)
-            .map((item) {
+        results = music.where((item) => item.contentType == type).map((item) {
           return ListContentSelection(
             elementType: type,
             referenceId: item.spotifyId,
             title: item.name,
-            subtitle: type == 'SONG'
+            subtitle: type == 'SONG' || type == 'ALBUM'
                 ? item.artistName
                 : 'Artista',
             imageUrl: item.imageUrl,
@@ -120,8 +111,7 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
       if (!mounted || version != _searchVersion) return;
 
       setState(() {
-        _errorMessage =
-            'No se pudo realizar la búsqueda. Intenta nuevamente.';
+        _errorMessage = 'No se pudo realizar la búsqueda. Intenta nuevamente.';
       });
     } finally {
       if (mounted && version == _searchVersion) {
@@ -153,10 +143,7 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.warmWhite,
-      title: Text(
-        'Agregar contenido',
-        style: AppTextStyles.sectionTitle,
-      ),
+      title: Text('Agregar contenido', style: AppTextStyles.sectionTitle),
       content: SizedBox(
         width: 520,
         height: MediaQuery.sizeOf(context).height * 0.6,
@@ -168,6 +155,7 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
               children: [
                 _typeChip('BOOK', 'Libros'),
                 _typeChip('SONG', 'Canciones'),
+                _typeChip('ALBUM', 'Álbumes'),
                 _typeChip('ARTIST', 'Artistas'),
               ],
             ),
@@ -225,9 +213,7 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
     }
 
     if (_results.isEmpty) {
-      return const Center(
-        child: Text('No se encontraron resultados.'),
-      );
+      return const Center(child: Text('No se encontraron resultados.'));
     }
 
     return ListView.builder(
@@ -238,11 +224,7 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
         return ListTile(
           contentPadding: EdgeInsets.zero,
           leading: _buildImage(item),
-          title: Text(
-            item.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
           subtitle: item.subtitle == null
               ? null
               : Text(
@@ -268,14 +250,12 @@ late final _musicApi = widget.musicApi ?? MusicApiService();
       return ColoredBox(
         color: AppColors.lilac,
         child: Center(
-          child: Icon(
-            switch (item.elementType) {
-              'BOOK' => Icons.book_outlined,
-              'ARTIST' => Icons.person_outline,
-              _ => Icons.music_note_outlined,
-            },
-            color: AppColors.ink,
-          ),
+          child: Icon(switch (item.elementType) {
+            'BOOK' => Icons.book_outlined,
+            'ARTIST' => Icons.person_outline,
+            'ALBUM' => Icons.album_outlined,
+            _ => Icons.music_note_outlined,
+          }, color: AppColors.ink),
         ),
       );
     }

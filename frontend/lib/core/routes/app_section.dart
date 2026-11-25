@@ -4,6 +4,7 @@ enum AppSection {
   music,
   books,
   social,
+  messages,
   communities,
   statistics,
   profile,

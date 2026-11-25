@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../home/presentation/widgets/home_music_recommendations_section.dart';
+import '../../../home/data/models/home_music_recommendations.dart';
+import '../../../home/data/services/recommendations_api_service.dart';
 import '../../data/models/music_detail.dart';
 import '../../data/models/music_search_item.dart';
 import '../../data/services/music_api_service.dart';
@@ -9,15 +12,23 @@ import '../../data/services/music_api_service.dart';
 class MusicDetailPage extends StatefulWidget {
   final String userId;
   final MusicSearchItem item;
+  final MusicApiService? musicApi;
+  final RecommendationsApiService? recommendationsApi;
 
-  const MusicDetailPage({super.key, required this.item, required this.userId});
+  const MusicDetailPage({
+    super.key,
+    required this.item,
+    required this.userId,
+    this.musicApi,
+    this.recommendationsApi,
+  });
 
   @override
   State<MusicDetailPage> createState() => _MusicDetailPageState();
 }
 
 class _MusicDetailPageState extends State<MusicDetailPage> {
-  final MusicApiService _musicApiService = MusicApiService();
+  late final MusicApiService _musicApiService;
   final TextEditingController _reviewController = TextEditingController();
 
   MusicDetail? _detail;
@@ -38,12 +49,14 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   @override
   void initState() {
     super.initState();
+    _musicApiService = widget.musicApi ?? MusicApiService();
     _loadDetail();
   }
 
   @override
   void dispose() {
     _reviewController.dispose();
+    if (widget.musicApi == null) _musicApiService.close();
     super.dispose();
   }
 
@@ -366,31 +379,51 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1000),
-              child: isDesktop
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 360,
-                          child: _MusicImage(imageUrl: detail.imageUrl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  isDesktop
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 360,
+                              child: _MusicImage(imageUrl: detail.imageUrl),
+                            ),
+                            const SizedBox(width: 48),
+                            Expanded(child: information),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 340,
+                                ),
+                                child: _MusicImage(imageUrl: detail.imageUrl),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            information,
+                          ],
                         ),
-                        const SizedBox(width: 48),
-                        Expanded(child: information),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 340),
-                            child: _MusicImage(imageUrl: detail.imageUrl),
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        information,
-                      ],
+                  const SizedBox(height: 36),
+                  HomeMusicRecommendationsSection(
+                    key: ValueKey(
+                      'similar-${detail.contentType}-${detail.spotifyId}',
                     ),
+                    userId: widget.userId,
+                    kind: MusicRecommendationKind.values.firstWhere(
+                      (kind) => kind.contentType == detail.contentType,
+                    ),
+                    referenceId: detail.spotifyId,
+                    api: widget.recommendationsApi,
+                    onOpenLists: () {},
+                  ),
+                ],
+              ),
             ),
           ),
         );

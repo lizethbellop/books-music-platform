@@ -13,6 +13,7 @@ import httpx
 import pandas as pd
 
 from .artifacts import digest
+from .provider_budget import provider_request
 
 
 WORK = re.compile(r"OL[0-9]+W")
@@ -119,7 +120,7 @@ def search_snapshot(targets, cache, user_agent):
         return snapshot["response"], path
     with httpx.Client(timeout=30, follow_redirects=True, headers={"User-Agent": user_agent}) as client:
         for attempt in range(3):
-            response = client.get("https://openlibrary.org/search.json", params=params)
+            response = provider_request(client, "openlibrary", "GET", "https://openlibrary.org/search.json", params=params)
             if response.status_code == 429 or response.status_code >= 500:
                 if attempt < 2:
                     time.sleep(min(30, max(1, 2**attempt)))
