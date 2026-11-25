@@ -57,4 +57,23 @@ public class GlobalExceptionHandler {
                 .status(status)
                 .body(body);
     }
+
+        @ExceptionHandler(UnprocessableEntityException.class)
+        public ResponseEntity<Map<String, Object>>
+        handleUnprocessableEntity(
+                UnprocessableEntityException ex
+        ) {
+
+        Map<String, Object> body = Map.of(
+                "timestamp", OffsetDateTime.now(),
+                "status", HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "error", "Unprocessable Entity",
+                "message", ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(body);
+        }
+
 }

@@ -213,17 +213,18 @@ CREATE INDEX idx_post_likes_post
 CREATE INDEX idx_post_likes_user
     ON post_likes (user_id);
 
-
 -- =========================================================
 -- 4. COMENTARIOS
 -- CU-34 Agregar comentario
 -- CU-35 Eliminar comentario
 --
--- REJECTED no se persiste:
--- si moderación rechaza el comentario, nunca se inserta.
+-- Extensión:
+-- - Editar comentario propio
 --
--- ACTIVE  = visible
--- REMOVED = eliminado después de haber existido
+-- Los comentarios rechazados por moderación NO se persisten.
+--
+-- La eliminación es física (hard delete).
+-- No usamos status, deleted_at ni removed_by.
 -- =========================================================
 
 CREATE TABLE comments (
@@ -234,21 +235,11 @@ CREATE TABLE comments (
 
     text TEXT NOT NULL,
 
-    status VARCHAR(20)
-        NOT NULL DEFAULT 'ACTIVE',
-
     created_at TIMESTAMP WITH TIME ZONE
         NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     updated_at TIMESTAMP WITH TIME ZONE
         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    deleted_at TIMESTAMP WITH TIME ZONE,
-
-    -- Usuario que realizó la eliminación.
-    -- Puede ser NULL si posteriormente implementamos
-    -- una eliminación automática del sistema.
-    removed_by UUID,
 
     CONSTRAINT fk_comments_post
         FOREIGN KEY (post_id)
@@ -258,39 +249,20 @@ CREATE TABLE comments (
     CONSTRAINT chk_comment_text
         CHECK (
             NULLIF(BTRIM(text), '') IS NOT NULL
-        ),
-
-    CONSTRAINT chk_comment_status
-        CHECK (
-            status IN (
-                'ACTIVE',
-                'REMOVED'
-            )
-        ),
-
-    CONSTRAINT chk_comment_removal
-        CHECK (
-            (
-                status = 'ACTIVE'
-                AND deleted_at IS NULL
-            )
-            OR
-            (
-                status = 'REMOVED'
-                AND deleted_at IS NOT NULL
-            )
         )
 );
 
 
+-- Consultar comentarios de una publicación
+-- en orden cronológico
 CREATE INDEX idx_comments_post_created
-    ON comments (post_id, created_at ASC)
-    WHERE status = 'ACTIVE';
+    ON comments (post_id, created_at ASC);
 
 
+-- Facilita consultas por autor
 CREATE INDEX idx_comments_author
     ON comments (author_id);
-
+    
 
 -- =========================================================
 -- 5. TÉRMINOS DE MODERACIÓN
