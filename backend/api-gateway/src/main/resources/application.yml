@@ -154,6 +154,11 @@ spring:
               predicates:
                 - Path=/api/profiles,/api/profiles/**
 
+            - id: social-service
+              uri: ${SOCIAL_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/social/**
+
             - id: recommendations-service
               uri: ${RECOMMENDATIONS_SERVICE_URL:http://localhost:8087}
               predicates:
