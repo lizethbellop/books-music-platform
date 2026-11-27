@@ -8,8 +8,8 @@ public record AddListElementRequest(
 
         @NotBlank(message = "Element type is required")
         @Pattern(
-                regexp = "BOOK|SONG|ARTIST",
-                message = "Element type must be BOOK, SONG or ARTIST"
+                regexp = "BOOK|SONG|ALBUM|ARTIST",
+                message = "Element type must be BOOK, SONG, ALBUM or ARTIST"
         )
         String elementType,
 

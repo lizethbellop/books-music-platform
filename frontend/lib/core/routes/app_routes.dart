@@ -5,9 +5,11 @@ abstract final class AppRoutes {
   static const String verifyToken = '/verify-token';
   static const String resetPassword = '/reset-password';
 
+  static const String preferencesOnboarding = '/welcome/preferences';
   static const String home = '/';
   static const String profile = '/profile';
   static const String music = '/music';
   static const String books = '/books';
+  static const String messages = '/messages';
   static const String communities = '/communities';
 }

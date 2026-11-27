@@ -79,10 +79,10 @@ class CommunityActivityControllerTest {
                   "title": "Debate: Cien Años de Soledad",
                   "description": "Discusión sobre los capítulos 1 al 5",
                   "location": "Sala Virtual Zoom",
-                  "startsAt": "2026-11-15T18:00:00Z",
-                  "endsAt": "2026-11-15T20:00:00Z"
+                  "startsAt": "%s",
+                  "endsAt": "%s"
                 }
-                """;
+                """.formatted(OffsetDateTime.now().plusDays(1), OffsetDateTime.now().plusDays(1).plusHours(2));
 
         // ACT & ASSERT
         mockMvc.perform(post("/api/v1/communities/{communityId}/activities", communityId)

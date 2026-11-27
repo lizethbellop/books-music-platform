@@ -17,7 +17,8 @@ import '../widgets/auth_button.dart';
 import '../widgets/auth_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool onboardingAfterLogin;
+  const LoginScreen({super.key, this.onboardingAfterLogin = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -66,7 +67,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       // navegar a la pantalla principal si el backend responde exitosamente
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        widget.onboardingAfterLogin
+            ? AppRoutes.preferencesOnboarding
+            : AppRoutes.home,
+        (_) => false,
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -202,7 +209,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.forgotPassword,
+                            );
                           },
                           child: Text(
                             '¿Olvidaste tu contraseña?',

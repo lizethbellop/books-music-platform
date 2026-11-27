@@ -59,6 +59,25 @@ class UserListControllerTest {
         return jwt().jwt(token);
     }
 
+    @Test
+    void debeObtenerSemillasSoloDelUuidAutenticado() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(service.getOwnBookSeeds(userId)).thenReturn(List.of("OL1W", "OL2W"));
+        mvc.perform(get("/api/profiles/me/lists/book-seeds")
+                        .with(authenticated(userId))
+                        .header("X-User-Id", UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bookIds[0]").value("OL1W"));
+        verify(service).getOwnBookSeeds(userId);
+    }
+
+    @Test
+    void debeExigirTokenParaSemillas() throws Exception {
+        mvc.perform(get("/api/profiles/me/lists/book-seeds"))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
+    }
+
     private String elementBody() {
         return """
                 {
@@ -172,6 +191,22 @@ class UserListControllerTest {
     }
 
     @Test
+    void debeAceptarAlbumYPropagarLaSesion() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID listId = UUID.randomUUID();
+        when(service.addElement(eq(userId), eq(listId), any(AddListElementRequest.class), eq("token-prueba")))
+                .thenReturn(new ListElementResponse(UUID.randomUUID(), "ALBUM", "album-test"));
+        mvc.perform(post("/api/profiles/me/lists/" + listId + "/elements")
+                .with(authenticated(userId)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"elementType\":\"ALBUM\",\"referenceId\":\"album-test\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.elementType").value("ALBUM"));
+        var captor = ArgumentCaptor.forClass(AddListElementRequest.class);
+        verify(service).addElement(eq(userId), eq(listId), captor.capture(), eq("token-prueba"));
+        assertEquals("ALBUM", captor.getValue().elementType());
+    }
+
+    @Test
     void debeRechazarTiposNoAdmitidos() throws Exception {
         UUID listId = UUID.randomUUID();
 
@@ -180,8 +215,8 @@ class UserListControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "elementType": "ALBUM",
-                                  "referenceId": "album-test"
+                                  "elementType": "PODCAST",
+                                  "referenceId": "podcast-test"
                                 }
                                 """))
                 .andExpect(status().isBadRequest());

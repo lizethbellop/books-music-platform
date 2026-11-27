@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../features/notifications/presentation/notification_bell.dart';
+
 import '../../core/routes/app_section.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/profile/data/models/profile_model.dart';
@@ -73,6 +75,7 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
 
             return Scaffold(
               backgroundColor: AppColors.cream,
+              floatingActionButton: const NotificationBell(),
               body: isDesktop
                   ? Row(
                       children: [
@@ -117,6 +120,7 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
       MusaDestination.music => AppSection.music,
       MusaDestination.books => AppSection.books,
       MusaDestination.profile => AppSection.profile,
+      MusaDestination.messages => AppSection.messages,
     };
   }
 
@@ -127,6 +131,7 @@ class _MusaNavigationShellState extends State<MusaNavigationShell> {
       AppSection.music => MusaDestination.music,
       AppSection.books => MusaDestination.books,
       AppSection.profile => MusaDestination.profile,
+      AppSection.messages => MusaDestination.messages,
       AppSection.social ||
       AppSection.communities ||
       AppSection.statistics => null,

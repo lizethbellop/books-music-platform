@@ -1,7 +1,1 @@
-enum MusaDestination {
-  home,
-  explore,
-  music,
-  books,
-  profile,
-}
+enum MusaDestination { home, explore, music, books, messages, profile }

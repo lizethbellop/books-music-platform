@@ -38,6 +38,17 @@ public class MusicDetailService {
                 .orElse(null);
 
         if (localContent != null) {
+            if (localContent.getArtworkCheckedAt() == null && spotifyAuthService.isConfigured()
+                    && (contentType == MusicContentType.SONG || localContent.getImageUrl() == null || localContent.getImageUrl().isBlank())) {
+                try {
+                    MusicDetailResponse verified=spotifyDetailService.getDetail(contentType,spotifyId);
+                    if (verified.imageUrl()!=null && !verified.imageUrl().isBlank()) localContent.setImageUrl(verified.imageUrl());
+                    localContent.setArtworkCheckedAt(java.time.LocalDateTime.now());
+                    musicContentRepository.save(localContent);
+                } catch (RuntimeException unavailable) {
+                    // Keep cached data; provider quotas protect any later attempt.
+                }
+            }
             return toResponse(localContent);
         }
 
@@ -95,6 +106,7 @@ public class MusicDetailService {
                 .name(detail.name())
                 .artistName(detail.artistName())
                 .imageUrl(detail.imageUrl())
+                .artworkCheckedAt(java.time.LocalDateTime.now())
                 .build();
 
         musicContentRepository.save(content);

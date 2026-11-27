@@ -46,6 +46,9 @@ class UserListServiceTest {
     @Mock
     private CatalogLookupService catalogLookupService;
 
+    @Mock
+    private com.musa.profile.repository.PreferenceElementRepository preferenceElements;
+
     @InjectMocks
     private UserListService service;
 
@@ -72,6 +75,17 @@ class UserListServiceTest {
         ReflectionTestUtils.setField(list, "id", listId);
 
         request = new AddListElementRequest("BOOK", "OL1W");
+    }
+
+    @Test
+    void debeConsultarReferenciasSinResolverCatalogos() {
+        when(profileService.getByUserId(userId)).thenReturn(profile);
+        when(listElementRepository.findBookReferencesByProfileId(profile.getId()))
+                .thenReturn(List.of("OL1W"));
+        when(preferenceElements.findBookReferencesByProfileId(profile.getId()))
+                .thenReturn(List.of("OL1W", "OL2W"));
+        assertEquals(List.of("OL1W", "OL2W"), service.getOwnBookSeeds(userId));
+        verifyNoInteractions(catalogLookupService, userListRepository);
     }
 
     private void givenOwnedList() {

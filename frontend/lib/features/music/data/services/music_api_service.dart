@@ -316,4 +316,5 @@ class MusicApiService {
 
     return response.body.trim().toLowerCase() == 'true';
   }
+  void close() => _client.close();
 }

@@ -36,7 +36,7 @@ CREATE TABLE list_elements (
         ON DELETE CASCADE,
 
     CONSTRAINT chk_list_element_type
-        CHECK (element_type IN ('BOOK', 'SONG', 'ARTIST')),
+        CHECK (element_type IN ('BOOK', 'SONG', 'ALBUM', 'ARTIST')),
 
     CONSTRAINT uk_list_element
         UNIQUE (list_id, element_type, reference_id)
@@ -67,7 +67,7 @@ CREATE TABLE preference_elements (
         ON DELETE CASCADE,
 
     CONSTRAINT chk_preference_element_type
-        CHECK (element_type IN ('BOOK', 'SONG', 'ARTIST', 'AUTHOR')),
+        CHECK (element_type IN ('BOOK', 'SONG', 'ALBUM', 'ARTIST', 'AUTHOR')),
 
     CONSTRAINT uk_preference_element
         UNIQUE (preference_id, element_type, reference_id)

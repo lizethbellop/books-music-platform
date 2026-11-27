@@ -49,25 +49,16 @@ void main() {
     final booksApi = BooksApiService(
       getAccessToken: () async => 'token-prueba',
       client: MockClient((request) async {
-        expect(
-          request.headers['Authorization'],
-          'Bearer token-prueba',
-        );
+        expect(request.headers['Authorization'], 'Bearer token-prueba');
 
-        return http.Response(
-          jsonEncode(books),
-          booksStatus,
-        );
+        return http.Response(jsonEncode(books), booksStatus);
       }),
     );
 
     final musicApi = MusicApiService(
       getAccessToken: () async => 'token-prueba',
       client: MockClient((request) async {
-        expect(
-          request.headers['Authorization'],
-          'Bearer token-prueba',
-        );
+        expect(request.headers['Authorization'], 'Bearer token-prueba');
 
         return http.Response(jsonEncode(music), 200);
       }),
@@ -79,8 +70,7 @@ void main() {
           builder: (context) => Scaffold(
             body: ElevatedButton(
               onPressed: () async {
-                final selection =
-                    await showDialog<ListContentSelection>(
+                final selection = await showDialog<ListContentSelection>(
                   context: context,
                   builder: (_) => ListContentSearchDialog(
                     booksApi: booksApi,
@@ -110,10 +100,7 @@ void main() {
   testWidgets('Busca libros y devuelve su referencia', (tester) async {
     ListContentSelection? selected;
 
-    await openSearch(
-      tester,
-      onSelected: (value) => selected = value,
-    );
+    await openSearch(tester, onSelected: (value) => selected = value);
 
     await search(tester);
 
@@ -130,10 +117,7 @@ void main() {
   testWidgets('Canciones excluye artistas y álbumes', (tester) async {
     ListContentSelection? selected;
 
-    await openSearch(
-      tester,
-      onSelected: (value) => selected = value,
-    );
+    await openSearch(tester, onSelected: (value) => selected = value);
 
     await tester.tap(find.text('Canciones'));
     await tester.pumpAndSettle();
@@ -153,10 +137,7 @@ void main() {
   testWidgets('Artistas devuelve únicamente artistas', (tester) async {
     ListContentSelection? selected;
 
-    await openSearch(
-      tester,
-      onSelected: (value) => selected = value,
-    );
+    await openSearch(tester, onSelected: (value) => selected = value);
 
     await tester.tap(find.text('Artistas'));
     await tester.pumpAndSettle();
@@ -178,12 +159,26 @@ void main() {
     await search(tester);
 
     expect(
-      find.text(
-        'No se pudo realizar la búsqueda. Intenta nuevamente.',
-      ),
+      find.text('No se pudo realizar la búsqueda. Intenta nuevamente.'),
       findsOneWidget,
     );
 
     expect(find.byTooltip('Agregar a la lista'), findsNothing);
+  });
+  testWidgets('Álbumes devuelve solo álbumes y conserva su tipo', (
+    tester,
+  ) async {
+    ListContentSelection? selected;
+    await openSearch(tester, onSelected: (value) => selected = value);
+    await tester.tap(find.text('Álbumes'));
+    await tester.pumpAndSettle();
+    await search(tester);
+    expect(find.text('Álbum de prueba'), findsOneWidget);
+    expect(find.text('Canción de prueba'), findsNothing);
+    expect(find.text('Artista de prueba'), findsNothing);
+    await tester.tap(find.byTooltip('Agregar a la lista'));
+    await tester.pumpAndSettle();
+    expect(selected?.elementType, 'ALBUM');
+    expect(selected?.referenceId, 'album-test');
   });
 }

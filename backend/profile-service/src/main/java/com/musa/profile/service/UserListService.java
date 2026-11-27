@@ -34,17 +34,20 @@ public class UserListService {
     private final UserListRepository userListRepository;
     private final ListElementRepository listElementRepository;
     private final CatalogLookupService catalogLookupService;
+    private final com.musa.profile.repository.PreferenceElementRepository preferenceElements;
 
     public UserListService(
             ProfileService profileService,
             UserListRepository userListRepository,
             ListElementRepository listElementRepository,
-            CatalogLookupService catalogLookupService
+            CatalogLookupService catalogLookupService,
+            com.musa.profile.repository.PreferenceElementRepository preferenceElements
     ) {
         this.profileService = profileService;
         this.userListRepository = userListRepository;
         this.listElementRepository = listElementRepository;
         this.catalogLookupService = catalogLookupService;
+        this.preferenceElements = preferenceElements;
     }
 
     @Transactional
@@ -71,6 +74,18 @@ public class UserListService {
                 .stream()
                 .map(UserListResponse::from)
                 .toList();
+    }
+
+    public List<String> getOwnBookSeeds(UUID userId) {
+        try {
+            Profile profile = profileService.getByUserId(userId);
+            return java.util.stream.Stream.concat(
+                    listElementRepository.findBookReferencesByProfileId(profile.getId()).stream(),
+                    preferenceElements.findBookReferencesByProfileId(profile.getId()).stream()
+            ).distinct().sorted().toList();
+        } catch (com.musa.profile.exception.ProfileNotFoundException ignored) {
+            return List.of();
+        }
     }
 
     private UserList getOwnedList(UUID userId, UUID listId){

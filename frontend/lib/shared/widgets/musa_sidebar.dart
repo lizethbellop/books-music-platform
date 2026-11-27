@@ -65,6 +65,12 @@ class MusaSidebar extends StatelessWidget {
                   onTap: () => onSectionSelected(AppSection.books),
                 ),
                 _SidebarItem(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Mensajes',
+                  selected: selectedSection == AppSection.messages,
+                  onTap: () => onSectionSelected(AppSection.messages),
+                ),
+                _SidebarItem(
                   icon: Icons.people_outline,
                   title: 'Social',
                   selected: selectedSection == AppSection.social,

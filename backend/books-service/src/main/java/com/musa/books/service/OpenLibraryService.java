@@ -1,6 +1,7 @@
 package com.musa.books.service;
 
 import com.musa.books.dto.BookSearchResultDto;
+import com.musa.books.dto.BookRecommendationCandidateDto;
 import com.musa.books.dto.OpenLibraryBookDto;
 import com.musa.books.dto.OpenLibrarySearchResponse;
 import com.musa.books.dto.OpenLibraryEditionDto;
@@ -10,6 +11,7 @@ import com.musa.books.dto.OpenLibraryWorkDto;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.stereotype.Service;
+import com.musa.books.budget.ProviderBudget.BudgetExceeded;
 import org.springframework.web.client.RestClient;
 
 
@@ -78,6 +80,8 @@ public class OpenLibraryService {
                     englishQuery.trim()
             );
 
+        } catch (BudgetExceeded limited) {
+            throw limited;
         } catch (Exception e) {
 
             /*
@@ -129,6 +133,28 @@ public class OpenLibraryService {
                 .map(this::toSearchResult)
                 .toList();
     }    
+
+    public List<BookRecommendationCandidateDto> getRecommendationCandidates(String query) {
+        OpenLibrarySearchResponse response = restClient.get()
+                .uri(builder -> builder.path("/search.json")
+                        .queryParam("q", query)
+                        .queryParam("fields", "key,title,author_name,first_publish_year,cover_i,subject")
+                        .queryParam("limit", 30)
+                        .build())
+                .retrieve().body(OpenLibrarySearchResponse.class);
+        if (response == null || response.getDocs() == null) return List.of();
+        return response.getDocs().stream()
+                .filter(book -> book.getKey() != null
+                        && book.getKey().replace("/works/", "").matches("OL[0-9]+W")
+                        && book.getTitle() != null && !book.getTitle().isBlank())
+                .map(book -> new BookRecommendationCandidateDto(
+                        book.getKey().replace("/works/", ""), book.getTitle(),
+                        book.getAuthorNames() == null ? List.of() : book.getAuthorNames(),
+                        book.getFirstPublishYear(), buildCoverUrl(book.getCoverId()),
+                        book.getSubjects() == null ? List.of()
+                                : book.getSubjects().stream().limit(40).toList()
+                )).toList();
+    }
 
     public List<BookSearchResultDto> getExploreBooks() {
 
@@ -243,7 +269,9 @@ private String findCoverFromEditions(
             }
         }
 
-    } catch (Exception e) {
+    } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
         /*
          * Una portada faltante no debe
@@ -397,7 +425,9 @@ private String findCoverFromEditions(
                                 OpenLibraryWorkDto.class
                         );
 
-            } catch (Exception e) {
+            } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
                 System.err.println(
                         "Error al consultar libro "
@@ -495,7 +525,9 @@ private String findCoverFromEditions(
                     );
                 }
 
-            } catch (Exception e) {
+            } catch (BudgetExceeded limited) {
+            throw limited;
+        } catch (Exception e) {
 
                 /*
                 * Si Open Library falla al obtener

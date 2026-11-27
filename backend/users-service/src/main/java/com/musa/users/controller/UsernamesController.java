@@ -15,6 +15,21 @@ public class UsernamesController {
     private final UserRepository users;
     public UsernamesController(UserRepository users) { this.users = users; }
 
+    public record UserSummary(UUID id, String username) {}
+
+    @GetMapping("/search")
+    @Transactional(readOnly = true)
+    public List<UserSummary> search(@RequestParam("q") String query) {
+        String prefix = query.trim();
+        if (prefix.length() < 2 || prefix.length() > 40) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Busca con entre 2 y 40 caracteres.");
+        }
+        return users.findByIsActiveTrueAndUsernameStartingWithIgnoreCaseOrderByUsernameAsc(
+                prefix, org.springframework.data.domain.PageRequest.of(0, 20)).stream()
+                .map(user -> new UserSummary(user.getId(), user.getUsername())).toList();
+    }
+
     // Información pública mínima; SecurityConfig requiere sesión en esta ruta.
     @GetMapping("/usernames")
     @Transactional(readOnly = true)

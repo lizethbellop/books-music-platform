@@ -7,6 +7,7 @@ import 'features/auth/data/services/auth_api_service.dart';
 import 'features/auth/data/services/auth_session_manager.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/onboarding/presentation/preferences_onboarding_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
 import 'features/auth/presentation/screens/verify_token_screen.dart';
 import 'features/auth/presentation/screens/reset_password_screen.dart';
@@ -110,7 +111,13 @@ class _MusaAppState extends State<MusaApp> {
     themeMode: ThemeMode.light,
     initialRoute: _manager.session == null ? AppRoutes.login : AppRoutes.home,
     routes: {
-      AppRoutes.login: (_) => const LoginScreen(),
+      AppRoutes.login: (context) => LoginScreen(
+        onboardingAfterLogin:
+            ModalRoute.of(context)?.settings.arguments == true,
+      ),
+      AppRoutes.preferencesOnboarding: (_) => _manager.session == null
+          ? const LoginScreen(onboardingAfterLogin: true)
+          : PreferencesOnboardingScreen(userId: _manager.session!.userId),
       AppRoutes.register: (_) => const RegisterScreen(),
       AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
       AppRoutes.verifyToken: (_) => const VerifyTokenScreen(),
@@ -118,6 +125,7 @@ class _MusaAppState extends State<MusaApp> {
       AppRoutes.home: (_) => _authenticatedPage(AppSection.home),
       AppRoutes.music: (_) => _authenticatedPage(AppSection.music),
       AppRoutes.books: (_) => _authenticatedPage(AppSection.books),
+      AppRoutes.messages: (_) => _authenticatedPage(AppSection.messages),
       AppRoutes.profile: (_) => _authenticatedPage(AppSection.profile),
       AppRoutes.communities: (_) => _authenticatedPage(AppSection.communities),
     },

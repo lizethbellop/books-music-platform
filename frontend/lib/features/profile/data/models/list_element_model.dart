@@ -18,14 +18,12 @@ class ListElementModel {
       id: json['id'] as String,
       elementType: json['elementType'] as String,
       referenceId: json['referenceId'] as String,
-      resolutionStatus:
-          json['resolutionStatus'] as String? ?? 'UNAVAILABLE',
+      resolutionStatus: json['resolutionStatus'] as String? ?? 'UNAVAILABLE',
       content: json['content'] as Map<String, dynamic>?,
     );
   }
 
-  bool get isAvailable =>
-      resolutionStatus == 'AVAILABLE' && content != null;
+  bool get isAvailable => resolutionStatus == 'AVAILABLE' && content != null;
 
   String get title {
     final key = elementType == 'BOOK' ? 'title' : 'name';
@@ -38,6 +36,7 @@ class ListElementModel {
     return switch (elementType) {
       'BOOK' => 'Libro',
       'SONG' => 'Canción',
+      'ALBUM' => 'Álbum',
       'ARTIST' => 'Artista',
       _ => 'Contenido',
     };
@@ -58,7 +57,7 @@ class ListElementModel {
       return names.isEmpty ? null : names;
     }
 
-    if (elementType == 'SONG') {
+    if (elementType == 'SONG' || elementType == 'ALBUM') {
       final artist = content?['artistName'];
 
       if (artist is String && artist.trim().isNotEmpty) {
