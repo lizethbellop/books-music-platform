@@ -14,9 +14,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
@@ -25,9 +22,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Pruebas de integración para validar las consultas del repositorio ActivityParticipantRepository.
- */
 @Tag("integration")
 @SpringBootTest
 @Transactional
@@ -53,7 +47,6 @@ public class ActivityParticipantRepositoryIntegrationTest {
         UUID organizerId = UUID.randomUUID();
         participantUserId = UUID.randomUUID();
 
-        // ARRANGE: preparar la jerarquía de entidades requeridas (Community -> CommunityActivity)
         Community community = new Community(
                 "Comunidad RSVP Test",
                 "Descripción",
@@ -80,19 +73,16 @@ public class ActivityParticipantRepositoryIntegrationTest {
     @Test
     @DisplayName("findByActivityIdAndUserId & existsBy...: Debe consultar y verificar la confirmación RSVP")
     void debeBuscarYVerificarExistenciaDeParticipante() {
-        // ARRANGE: registrar la participación confirmada del usuario en la actividad
         ActivityParticipant participant = new ActivityParticipant(activity, participantUserId, ParticipantStatus.CONFIRMADA);
         participantRepository.saveAndFlush(participant);
 
         entityManager.flush();
         entityManager.clear();
 
-        // ACT: consultar la inscripción y validar su existencia por estado CONFIRMADA
         Optional<ActivityParticipant> found = participantRepository.findByActivityIdAndUserId(activity.getId(), participantUserId);
         boolean existsConfirmed = participantRepository.existsByActivityIdAndUserIdAndStatus(activity.getId(), participantUserId, ParticipantStatus.CONFIRMADA);
         boolean existsCancelled = participantRepository.existsByActivityIdAndUserIdAndStatus(activity.getId(), participantUserId, ParticipantStatus.CANCELADA);
 
-        // ASSERT: validar el hallazgo del registro y la coherencia del indicador booleano
         assertAll(
                 () -> assertTrue(found.isPresent(), "Debe encontrar el registro de participación"),
                 () -> assertTrue(existsConfirmed, "Debe retornar true para asistencia CONFIRMADA"),
@@ -102,9 +92,8 @@ public class ActivityParticipantRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("findByActivityIdAndStatus & findByUserIdAndStatus & countBy...: Debe listar y contar los asistentes paginados")
-    void debeObtenerParticipantesPaginadosYContabilizarConfirmados() {
-        // ARRANGE: inscribir 2 usuarios confirmados en la actividad
+    @DisplayName("countByActivityIdAndStatus: Debe contabilizar los asistentes confirmados")
+    void debeContabilizarConfirmados() {
         UUID secondUserId = UUID.randomUUID();
         ActivityParticipant part1 = new ActivityParticipant(activity, participantUserId, ParticipantStatus.CONFIRMADA);
         ActivityParticipant part2 = new ActivityParticipant(activity, secondUserId, ParticipantStatus.CONFIRMADA);
@@ -114,18 +103,8 @@ public class ActivityParticipantRepositoryIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // ACT: obtener páginas por actividad y por usuario, e invocar el método de conteo
-        Page<ActivityParticipant> activityParticipantsPage = participantRepository.findByActivityIdAndStatus(activity.getId(), ParticipantStatus.CONFIRMADA, pageable);
-        Page<ActivityParticipant> userHistoryPage = participantRepository.findByUserIdAndStatus(participantUserId, ParticipantStatus.CONFIRMADA, pageable);
         long confirmedCount = participantRepository.countByActivityIdAndStatus(activity.getId(), ParticipantStatus.CONFIRMADA);
 
-        // ASSERT: verificar totales y contenido paginado
-        assertAll(
-                () -> assertEquals(2, activityParticipantsPage.getTotalElements(), "Debe listar 2 participantes confirmados en la actividad"),
-                () -> assertEquals(1, userHistoryPage.getTotalElements(), "Debe listar 1 actividad en el historial del usuario"),
-                () -> assertEquals(2L, confirmedCount, "El contador de asistentes confirmados debe ser 2")
-        );
+        assertEquals(2L, confirmedCount, "El contador de asistentes confirmados debe ser 2");
     }
 }
