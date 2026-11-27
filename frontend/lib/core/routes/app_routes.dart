@@ -9,4 +9,5 @@ abstract final class AppRoutes {
   static const String profile = '/profile';
   static const String music = '/music';
   static const String books = '/books';
+  static const String communities = '/communities';
 }

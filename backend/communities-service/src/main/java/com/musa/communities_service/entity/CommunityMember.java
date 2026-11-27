@@ -32,7 +32,7 @@ public class CommunityMember {
     @Column(nullable = false, length = 20)
     private MemberRole role;
 
-    @Column(name = "joined_at", nullable = false, updatable = false)
+    @Column(name = "joined_at", nullable = false)
     private OffsetDateTime joinedAt;
 
     @Enumerated(EnumType.STRING)

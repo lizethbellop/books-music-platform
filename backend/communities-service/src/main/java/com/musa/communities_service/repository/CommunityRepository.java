@@ -40,35 +40,6 @@ public interface CommunityRepository extends JpaRepository<Community, UUID> {
     Optional<Community> findByIdAndStatus(UUID id, CommunityStatus status);
 
     /**
-     * Obtiene una lista paginada de comunidades filtradas exclusivamente por su estado lógico.
-     *
-     * @param status Estado lógico por el cual filtrar.
-     * @param pageable Parámetros de paginación y ordenamiento.
-     * @return Página de comunidades que coinciden con el estado.
-     */
-    Page<Community> findByStatus(CommunityStatus status, Pageable pageable);
-
-    /**
-     * Obtiene una lista paginada de comunidades filtradas por su tipo y estado lógico.
-     *
-     * @param type Tipo de comunidad (LIBROS, MUSICA, MIXTO).
-     * @param status Estado lógico por el cual filtrar.
-     * @param pageable Parámetros de paginación y ordenamiento.
-     * @return Página de comunidades encontradas.
-     */
-    Page<Community> findByTypeAndStatus(CommunityType type, CommunityStatus status, Pageable pageable);
-
-    /**
-     * Consulta las comunidades creadas por un usuario específico filtradas por su estado lógico.
-     *
-     * @param createdBy UUID del usuario creador.
-     * @param status Estado lógico de la comunidad.
-     * @param pageable Parámetros de paginación.
-     * @return Página con las comunidades creadas por el usuario.
-     */
-    Page<Community> findByCreatedByAndStatus(UUID createdBy, CommunityStatus status, Pageable pageable);
-
-    /**
      * Realiza una búsqueda avanzada paginada de comunidades aplicando filtros opcionales de texto
      * (coincidencia en nombre o descripción) y tipo de comunidad sobre registros en un estado determinado.
      *
@@ -80,8 +51,9 @@ public interface CommunityRepository extends JpaRepository<Community, UUID> {
      */
     @Query("SELECT c FROM Community c WHERE c.status = :status AND " +
             "(:type IS NULL OR c.type = :type) AND " +
-            "(:query IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "(cast(:query as String) IS NULL OR :query = '' " +
+            "OR LOWER(c.name) LIKE LOWER(CONCAT('%', cast(:query as String), '%')) " +
+            "OR LOWER(c.description) LIKE LOWER(CONCAT('%', cast(:query as String), '%')))")
     Page<Community> searchCommunities(
             @Param("query") String query,
             @Param("type") CommunityType type,

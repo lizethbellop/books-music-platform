@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Contrato de servicio para la gestión de comunidades y sus membresías.
@@ -79,4 +80,10 @@ public interface CommunityService {
      * @param currentUserId Identificador del usuario autenticado (debe ser ADMINISTRADOR).
      */
     void deleteCommunity(UUID communityId, UUID currentUserId);
+
+    List<CommunityMemberResponseDto> getCommunityMembers(UUID communityId, UUID currentUserId);
+
+    CommunityMemberResponseDto approveMember(UUID communityId, UUID targetUserId, UUID currentUserId);
+
+    void rejectOrRemoveMember(UUID communityId, UUID targetUserId, UUID currentUserId);
 }

@@ -57,9 +57,19 @@ public interface CommunityActivityService {
     /**
      * Registra o actualiza la confirmación de asistencia (RSVP) del usuario autenticado a una actividad.
      *
+     * @param communityId Identificador de la comunidad organizadora.
      * @param activityId Identificador de la actividad a la cual asistirá.
      * @param currentUserId Identificador del usuario autenticado que confirma asistencia.
      * @return DTO con la confirmación de participación registrada.
      */
-    ActivityParticipantResponseDto confirmAttendance(UUID activityId, UUID currentUserId);
+    ActivityParticipantResponseDto confirmAttendance(UUID communityId, UUID activityId, UUID currentUserId);
+
+    /**
+     * Cancela la asistencia confirmada del usuario autenticado a una actividad.
+     *
+     * @param communityId Identificador de la comunidad organizadora.
+     * @param activityId Identificador de la actividad a la cual se cancela la asistencia.
+     * @param currentUserId Identificador del usuario autenticado que cancela su asistencia.
+     */
+    void cancelAttendance(UUID communityId, UUID activityId, UUID currentUserId);
 }

@@ -8,6 +8,7 @@ import com.musa.communities_service.entity.Community;
 import com.musa.communities_service.entity.CommunityMember;
 import com.musa.communities_service.enums.CommunityStatus;
 import com.musa.communities_service.enums.CommunityType;
+import com.musa.communities_service.enums.CommunityVisibility;
 import com.musa.communities_service.enums.MemberRole;
 import com.musa.communities_service.enums.MemberStatus;
 import com.musa.communities_service.exception.BusinessRuleException;
@@ -24,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,7 +68,7 @@ public class CommunityServiceImpl implements CommunityService {
         );
         memberRepository.save(adminMember);
 
-        return communityMapper.toResponseDto(savedCommunity, 1L, true, MemberRole.ADMINISTRADOR);
+        return communityMapper.toResponseDto(savedCommunity, 1L, true, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
     }
 
     @Override
@@ -73,19 +76,12 @@ public class CommunityServiceImpl implements CommunityService {
     public Page<CommunityResponseDto> searchCommunities(
             String query, CommunityType type, Pageable pageable, UUID currentUserId) {
 
-        Page<Community> communities = communityRepository.searchCommunities(query, type, CommunityStatus.ACTIVA, pageable);
+        String sanitizedQuery = (query == null || query.isBlank()) ? "" : query.trim();
 
-        return communities.map(community -> {
-            long memberCount = memberRepository.countByCommunityIdAndStatus(community.getId(), MemberStatus.ACTIVO);
+        Page<Community> communities = communityRepository.searchCommunities(
+                sanitizedQuery, type, CommunityStatus.ACTIVA, pageable);
 
-            Optional<CommunityMember> memberOpt = memberRepository
-                    .findByCommunityIdAndUserIdAndStatus(community.getId(), currentUserId, MemberStatus.ACTIVO);
-
-            boolean isMember = memberOpt.isPresent();
-            MemberRole userRole = memberOpt.map(CommunityMember::getRole).orElse(null);
-
-            return communityMapper.toResponseDto(community, memberCount, isMember, userRole);
-        });
+        return communities.map(community -> mapCommunityWithMembership(community, currentUserId));
     }
 
     @Override
@@ -94,17 +90,9 @@ public class CommunityServiceImpl implements CommunityService {
         Community community = communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)
                 .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
 
-        long memberCount = memberRepository.countByCommunityIdAndStatus(communityId, MemberStatus.ACTIVO);
-
-        Optional<CommunityMember> memberOpt = memberRepository
-                .findByCommunityIdAndUserIdAndStatus(communityId, currentUserId, MemberStatus.ACTIVO);
-
-        boolean isMember = memberOpt.isPresent();
-        MemberRole userRole = memberOpt.map(CommunityMember::getRole).orElse(null);
-
-        return communityMapper.toResponseDto(community, memberCount, isMember, userRole);
+        return mapCommunityWithMembership(community, currentUserId);
     }
-
+    
     @Override
     @Transactional
     public CommunityResponseDto updateCommunity(UUID communityId, CommunityUpdateRequestDto request, UUID currentUserId) {
@@ -112,6 +100,8 @@ public class CommunityServiceImpl implements CommunityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
 
         validateAdminRole(communityId, currentUserId);
+
+        CommunityVisibility previousVisibility = community.getVisibility();
 
         if (request.description() != null) {
             community.setDescription(request.description());
@@ -124,9 +114,23 @@ public class CommunityServiceImpl implements CommunityService {
         }
 
         Community updatedCommunity = communityRepository.save(community);
+
+        if (previousVisibility == CommunityVisibility.PRIVADA &&
+            updatedCommunity.getVisibility() == CommunityVisibility.PUBLICA) {
+            List<CommunityMember> pendingMembers = memberRepository
+                    .findByCommunityIdAndStatusOrderByJoinedAtAsc(communityId, MemberStatus.PENDIENTE);
+            OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+            for (CommunityMember pending : pendingMembers) {
+                pending.setStatus(MemberStatus.ACTIVO);
+                pending.setJoinedAt(now);
+            }
+            memberRepository.saveAll(pendingMembers);
+        }
+
         long memberCount = memberRepository.countByCommunityIdAndStatus(communityId, MemberStatus.ACTIVO);
 
-        return communityMapper.toResponseDto(updatedCommunity, memberCount, true, MemberRole.ADMINISTRADOR);
+        return communityMapper.toResponseDto(
+                updatedCommunity, memberCount, true, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
     }
 
     @Override
@@ -134,6 +138,10 @@ public class CommunityServiceImpl implements CommunityService {
     public CommunityMemberResponseDto joinCommunity(UUID communityId, UUID currentUserId) {
         Community community = communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)
                 .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
+
+        MemberStatus targetStatus = (community.getVisibility() == CommunityVisibility.PRIVADA)
+                ? MemberStatus.PENDIENTE
+                : MemberStatus.ACTIVO;
 
         Optional<CommunityMember> existingMemberOpt = memberRepository
                 .findByCommunityIdAndUserId(communityId, currentUserId);
@@ -143,7 +151,11 @@ public class CommunityServiceImpl implements CommunityService {
             if (existingMember.getStatus() == MemberStatus.ACTIVO) {
                 throw new BusinessRuleException("Ya eres miembro activo de esta comunidad");
             }
-            existingMember.setStatus(MemberStatus.ACTIVO);
+            if (existingMember.getStatus() == MemberStatus.PENDIENTE) {
+                throw new BusinessRuleException("Ya tienes una solicitud pendiente para esta comunidad");
+            }
+            existingMember.setRole(MemberRole.MIEMBRO);
+            existingMember.setStatus(targetStatus);
             existingMember.setJoinedAt(OffsetDateTime.now(ZoneOffset.UTC));
             return communityMapper.toMemberResponseDto(memberRepository.save(existingMember));
         }
@@ -152,7 +164,7 @@ public class CommunityServiceImpl implements CommunityService {
                 community,
                 currentUserId,
                 MemberRole.MIEMBRO,
-                MemberStatus.ACTIVO
+                targetStatus
         );
 
         return communityMapper.toMemberResponseDto(memberRepository.save(newMember));
@@ -162,12 +174,12 @@ public class CommunityServiceImpl implements CommunityService {
     @Transactional
     public void leaveCommunity(UUID communityId, UUID currentUserId) {
         CommunityMember member = memberRepository
-                .findByCommunityIdAndUserIdAndStatus(communityId, currentUserId, MemberStatus.ACTIVO)
-                .orElseThrow(() -> new BusinessRuleException("No eres un miembro activo de esta comunidad"));
+                .findByCommunityIdAndUserId(communityId, currentUserId)
+                .filter(m -> m.getStatus() == MemberStatus.ACTIVO || m.getStatus() == MemberStatus.PENDIENTE)
+                .orElseThrow(() -> new BusinessRuleException("No eres miembro ni tienes una solicitud pendiente en esta comunidad"));
 
-        if (member.getRole() == MemberRole.ADMINISTRADOR) {
-            long activeAdmins = memberRepository.countByCommunityIdAndRoleAndStatus(
-                    communityId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
+        if (member.getStatus() == MemberStatus.ACTIVO && member.getRole() == MemberRole.ADMINISTRADOR) {
+            long activeAdmins = memberRepository.countByCommunityIdAndRoleAndStatus(communityId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
             if (activeAdmins <= 1) {
                 throw new BusinessRuleException("No puedes salir de la comunidad siendo el único administrador");
             }
@@ -187,6 +199,88 @@ public class CommunityServiceImpl implements CommunityService {
 
         community.setStatus(CommunityStatus.ELIMINADA);
         communityRepository.save(community);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommunityMemberResponseDto> getCommunityMembers(UUID communityId, UUID currentUserId) {
+        Community community = communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)
+                .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
+
+        if (community.getVisibility() == CommunityVisibility.PRIVADA &&
+            !memberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, currentUserId, MemberStatus.ACTIVO)) {
+            throw new ForbiddenActionException("Debes ser miembro activo para ver los integrantes de una comunidad privada");
+        }
+
+        List<CommunityMember> members = new ArrayList<>(
+                memberRepository.findByCommunityIdAndStatusOrderByJoinedAtAsc(communityId, MemberStatus.ACTIVO)
+        );
+
+        boolean isAdmin = memberRepository.existsByCommunityIdAndUserIdAndRoleAndStatus(
+                communityId, currentUserId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
+
+        if (isAdmin) {
+            members.addAll(
+                    memberRepository.findByCommunityIdAndStatusOrderByJoinedAtAsc(communityId, MemberStatus.PENDIENTE)
+            );
+        }
+
+        return members.stream()
+                .map(communityMapper::toMemberResponseDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public CommunityMemberResponseDto approveMember(UUID communityId, UUID targetUserId, UUID currentUserId) {
+        communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)
+                .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
+
+        validateAdminRole(communityId, currentUserId);
+
+        CommunityMember pendingMember = memberRepository
+                .findByCommunityIdAndUserIdAndStatus(communityId, targetUserId, MemberStatus.PENDIENTE)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe una solicitud pendiente para este usuario"));
+
+        pendingMember.setStatus(MemberStatus.ACTIVO);
+        pendingMember.setJoinedAt(OffsetDateTime.now(ZoneOffset.UTC));
+
+        return communityMapper.toMemberResponseDto(memberRepository.save(pendingMember));
+    }
+
+    @Override
+    @Transactional
+    public void rejectOrRemoveMember(UUID communityId, UUID targetUserId, UUID currentUserId) {
+        communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)
+                .orElseThrow(() -> new ResourceNotFoundException("Comunidad no encontrada con el id: " + communityId));
+
+        validateAdminRole(communityId, currentUserId);
+
+        if (targetUserId.equals(currentUserId)) {
+            throw new BusinessRuleException("No puedes expulsarte a ti mismo; utiliza la opción de salir de la comunidad");
+        }
+
+        CommunityMember member = memberRepository
+                .findByCommunityIdAndUserId(communityId, targetUserId)
+                .filter(m -> m.getStatus() == MemberStatus.ACTIVO || m.getStatus() == MemberStatus.PENDIENTE)
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no es miembro activo ni tiene solicitud pendiente"));
+
+        member.setStatus(MemberStatus.RETIRADO);
+        memberRepository.save(member);
+    }
+
+    private CommunityResponseDto mapCommunityWithMembership(Community community, UUID currentUserId) {
+        long memberCount = memberRepository.countByCommunityIdAndStatus(community.getId(), MemberStatus.ACTIVO);
+
+        Optional<CommunityMember> memberOpt = memberRepository
+                .findByCommunityIdAndUserId(community.getId(), currentUserId)
+                .filter(m -> m.getStatus() == MemberStatus.ACTIVO || m.getStatus() == MemberStatus.PENDIENTE);
+
+        MemberStatus membershipStatus = memberOpt.map(CommunityMember::getStatus).orElse(null);
+        boolean isMember = (membershipStatus == MemberStatus.ACTIVO);
+        MemberRole userRole = isMember ? memberOpt.get().getRole() : null;
+
+        return communityMapper.toResponseDto(community, memberCount, isMember, userRole, membershipStatus);
     }
 
     private void validateAdminRole(UUID communityId, UUID userId) {

@@ -9,6 +9,7 @@ import com.musa.communities_service.entity.Community;
 import com.musa.communities_service.entity.CommunityActivity;
 import com.musa.communities_service.enums.ActivityStatus;
 import com.musa.communities_service.enums.CommunityStatus;
+import com.musa.communities_service.enums.CommunityVisibility;
 import com.musa.communities_service.enums.MemberRole;
 import com.musa.communities_service.enums.MemberStatus;
 import com.musa.communities_service.enums.ParticipantStatus;
@@ -31,10 +32,6 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Implementación de la lógica de negocio para actividades y asistencias.
- * Cubre los casos de uso: CU-49, CU-50, CU-51, CU-52 y CU-53.
- */
 @Service
 public class CommunityActivityServiceImpl implements CommunityActivityService {
 
@@ -103,6 +100,16 @@ public class CommunityActivityServiceImpl implements CommunityActivityService {
         if (activity.getEndsAt() != null && activity.getEndsAt().isBefore(activity.getStartsAt())) {
             throw new BusinessRuleException("La fecha de finalización no puede ser anterior a la fecha de inicio");
         }
+        if (request.status() != null) {
+            if (request.status() == ActivityStatus.ELIMINADA) {
+                throw new BusinessRuleException("Usa el endpoint de eliminación para borrar una actividad");
+            }
+            activity.setStatus(request.status());
+            if (request.status() == ActivityStatus.CANCELADA) {
+                participantRepository.updateStatusByActivityIdAndStatus(
+                        activityId, ParticipantStatus.CONFIRMADA, ParticipantStatus.CANCELADA);
+            }
+        }
 
         CommunityActivity updatedActivity = activityRepository.save(activity);
         long participantCount = participantRepository.countByActivityIdAndStatus(activityId, ParticipantStatus.CONFIRMADA);
@@ -118,23 +125,30 @@ public class CommunityActivityServiceImpl implements CommunityActivityService {
         findActiveCommunityOrThrow(communityId);
         validateAdminRole(communityId, currentUserId);
 
-        CommunityActivity activity = activityRepository.findByIdAndCommunityIdAndStatus(
-                        activityId, communityId, ActivityStatus.PROGRAMADA)
+        CommunityActivity activity = activityRepository.findByIdAndCommunityIdAndStatusNot(
+                        activityId, communityId, ActivityStatus.ELIMINADA)
                 .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada con el id: " + activityId));
 
-        activity.setStatus(ActivityStatus.CANCELADA);
+        participantRepository.updateStatusByActivityIdAndStatus(
+                activityId, ParticipantStatus.CONFIRMADA, ParticipantStatus.CANCELADA);
+        activity.setStatus(ActivityStatus.ELIMINADA);
         activityRepository.save(activity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ActivityResponseDto> getCommunityActivities(UUID communityId, Pageable pageable, UUID currentUserId) {
-        findActiveCommunityOrThrow(communityId);
+        Community community = findActiveCommunityOrThrow(communityId);
 
-        Page<CommunityActivity> activities = activityRepository
-                .findByCommunityIdAndStatus(communityId, ActivityStatus.PROGRAMADA, pageable);
+        if (community.getVisibility() == CommunityVisibility.PRIVADA &&
+            !memberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, currentUserId, MemberStatus.ACTIVO)) {
+            throw new ForbiddenActionException("Debes ser miembro activo para ver las actividades de una comunidad privada");
+        }
 
-        return activities.map(activity -> {
+        Page<CommunityActivity> activitiesPage = activityRepository
+                .findByCommunityIdAndStatusNot(communityId, ActivityStatus.ELIMINADA, pageable);
+
+        return activitiesPage.map(activity -> {
             long participantCount = participantRepository.countByActivityIdAndStatus(
                     activity.getId(), ParticipantStatus.CONFIRMADA);
             boolean isParticipating = participantRepository.existsByActivityIdAndUserIdAndStatus(
@@ -146,14 +160,21 @@ public class CommunityActivityServiceImpl implements CommunityActivityService {
 
     @Override
     @Transactional
-    public ActivityParticipantResponseDto confirmAttendance(UUID activityId, UUID currentUserId) {
-        CommunityActivity activity = activityRepository.findByIdAndStatus(activityId, ActivityStatus.PROGRAMADA)
-                .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada con el id: " + activityId));
+    public ActivityParticipantResponseDto confirmAttendance(UUID communityId, UUID activityId, UUID currentUserId) {
+        findActiveCommunityOrThrow(communityId);
+
+        CommunityActivity activity = activityRepository.findByIdAndCommunityIdAndStatus(
+                        activityId, communityId, ActivityStatus.PROGRAMADA)
+                .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada o no está programada en esta comunidad"));
+
+        if (!activity.getStartsAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC))) {
+            throw new BusinessRuleException("No puedes confirmar asistencia a una actividad que ya comenzó");
+        }
 
         boolean isMember = memberRepository.existsByCommunityIdAndUserIdAndStatus(
-                activity.getCommunity().getId(), currentUserId, MemberStatus.ACTIVO);
+                communityId, currentUserId, MemberStatus.ACTIVO);
         if (!isMember) {
-            throw new BusinessRuleException("Debes ser miembro de la comunidad para confirmar asistencia a sus actividades");
+            throw new ForbiddenActionException("Debes ser miembro activo de la comunidad para confirmar asistencia");
         }
 
         Optional<ActivityParticipant> participantOpt = participantRepository
@@ -161,6 +182,9 @@ public class CommunityActivityServiceImpl implements CommunityActivityService {
 
         if (participantOpt.isPresent()) {
             ActivityParticipant participant = participantOpt.get();
+            if (participant.getStatus() == ParticipantStatus.CONFIRMADA) {
+                throw new BusinessRuleException("Ya tienes confirmada tu asistencia a esta actividad");
+            }
             participant.setStatus(ParticipantStatus.CONFIRMADA);
             participant.setConfirmedAt(OffsetDateTime.now(ZoneOffset.UTC));
             return activityMapper.toParticipantResponseDto(participantRepository.save(participant));
@@ -173,6 +197,27 @@ public class CommunityActivityServiceImpl implements CommunityActivityService {
         );
 
         return activityMapper.toParticipantResponseDto(participantRepository.save(newParticipant));
+    }
+
+    @Override
+    @Transactional
+    public void cancelAttendance(UUID communityId, UUID activityId, UUID currentUserId) {
+        findActiveCommunityOrThrow(communityId);
+
+        CommunityActivity activity = activityRepository.findByIdAndCommunityIdAndStatus(
+                        activityId, communityId, ActivityStatus.PROGRAMADA)
+                .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada o ya no está programada"));
+
+        if (!activity.getStartsAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC))) {
+            throw new BusinessRuleException("No puedes cancelar asistencia a una actividad que ya comenzó");
+        }
+
+        ActivityParticipant participant = participantRepository
+        .findByActivityIdAndUserIdAndStatus(activityId, currentUserId, ParticipantStatus.CONFIRMADA)
+        .orElseThrow(() -> new ResourceNotFoundException("No tienes una asistencia confirmada para esta actividad"));
+
+        participant.setStatus(ParticipantStatus.CANCELADA);
+        participantRepository.save(participant);
     }
 
     private Community findActiveCommunityOrThrow(UUID communityId) {

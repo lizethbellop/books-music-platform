@@ -54,3 +54,12 @@ spring:
               uri: http://localhost:8082
               predicates:
                 - Path=/api/profiles,/api/profiles/**
+            
+            - id: communities-service
+              uri: http://localhost:8086
+              predicates:
+                - Path=/api/v1/communities/**
+musa:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}

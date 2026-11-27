@@ -37,23 +37,23 @@ public interface CommunityActivityRepository extends JpaRepository<CommunityActi
     Optional<CommunityActivity> findByIdAndCommunityIdAndStatus(UUID id, UUID communityId, ActivityStatus status);
 
     /**
-     * Obtiene una lista paginada de actividades pertenecientes a una comunidad según su estado.
-     *
-     * @param communityId UUID de la comunidad asociada.
-     * @param status Estado lógico de la actividad.
-     * @param pageable Parámetros de paginación y ordenamiento.
-     * @return Página de actividades asociadas a la comunidad.
-     */
-    Page<CommunityActivity> findByCommunityIdAndStatus(UUID communityId, ActivityStatus status, Pageable pageable);
-
-    /**
-     * Obtiene las actividades creadas por un usuario en particular dentro de una comunidad específica y con un estado dado.
+     * Obtiene una lista paginada de actividades de una comunidad que no tengan un estado específico.
      *
      * @param communityId UUID de la comunidad.
-     * @param createdBy UUID del usuario organizador.
-     * @param status Estado de la actividad.
-     * @param pageable Parámetros de paginación.
-     * @return Página con las actividades que coinciden con los parámetros.
+     * @param status Estado a excluir (ej. CANCELADA).
+     * @param pageable Parámetros de paginación y ordenamiento.
+     * @return Página con las actividades que no coinciden con el estado excluido.
      */
-    Page<CommunityActivity> findByCommunityIdAndCreatedByAndStatus(UUID communityId, UUID createdBy, ActivityStatus status, Pageable pageable);
+    Page<CommunityActivity> findByCommunityIdAndStatusNot(UUID communityId, ActivityStatus status, Pageable pageable);
+
+
+    /**
+     * Busca una actividad específica perteneciente a una comunidad dada por sus identificadores y que no tenga un estado específico.
+     *
+     * @param id UUID de la actividad.
+     * @param communityId UUID de la comunidad organizadora.
+     * @param status Estado lógico a excluir de la búsqueda.
+     * @return Un {@link Optional} con la actividad localizada o vacío si no coincide.
+     */
+    Optional<CommunityActivity> findByIdAndCommunityIdAndStatusNot(UUID id, UUID communityId, ActivityStatus status);
 }
