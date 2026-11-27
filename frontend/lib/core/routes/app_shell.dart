@@ -8,6 +8,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/books/presentation/pages/books_home_page.dart';
 import '../../features/music/presentation/pages/music_home_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
+import '../../features/communities/presentation/pages/explore_communities_page.dart';
 import '../../shared/models/musa_destination.dart';
 import '../../shared/widgets/musa_navigation_shell.dart';
 
@@ -68,12 +69,13 @@ class _AppShellState extends State<AppShell> {
 
     AppSection.statistics => widget.statisticsPage ?? const StatisticsPage(),
 
+    AppSection.communities => ExploreCommunitiesPage(userId: widget.userId,),
+
     _ => Center(
       child: Text(
         '${switch (_section) {
           AppSection.explore => 'Explorar',
           AppSection.social => 'Social',
-          AppSection.communities => 'Comunidades',
           _ => 'Pendiente',
         }} — pendiente',
         style: const TextStyle(color: AppColors.ink),

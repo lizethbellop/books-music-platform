@@ -13,8 +13,10 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.web.PagedModel;
 
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Controlador REST para la administración y consulta de comunidades y sus miembros.
@@ -57,14 +59,14 @@ public class CommunityController {
      * @return Página de comunidades mapeadas con estado HTTP 200 (OK).
      */
     @GetMapping
-    public ResponseEntity<Page<CommunityResponseDto>> searchCommunities(
+    public ResponseEntity<PagedModel<CommunityResponseDto>> searchCommunities(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) CommunityType type,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
             @RequestHeader("X-User-Id") UUID currentUserId) {
         Page<CommunityResponseDto> response = communityService.searchCommunities(query, type, pageable, currentUserId);
-        return ResponseEntity.ok(response);
-    }
+        return ResponseEntity.ok(new PagedModel<>(response));
+    } 
 
     /**
      * Obtiene la información detallada de una comunidad por su ID.
@@ -96,6 +98,15 @@ public class CommunityController {
             @Valid @RequestBody CommunityUpdateRequestDto request,
             @RequestHeader("X-User-Id") UUID currentUserId) {
         CommunityResponseDto response = communityService.updateCommunity(communityId, request, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/{communityId}/members")
+    public ResponseEntity<List<CommunityMemberResponseDto>> getCommunityMembers(
+            @PathVariable UUID communityId,
+            @RequestHeader("X-User-Id") UUID currentUserId) {
+        List<CommunityMemberResponseDto> response = communityService.getCommunityMembers(communityId, currentUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -144,6 +155,40 @@ public class CommunityController {
             @PathVariable UUID communityId,
             @RequestHeader("X-User-Id") UUID currentUserId) {
         communityService.deleteCommunity(communityId, currentUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Aprueba la solicitud de membresía de un usuario a una comunidad.
+     *
+     * @param communityId UUID de la comunidad.
+     * @param userId UUID del usuario cuya solicitud se aprueba.
+     * @param currentUserId UUID del usuario autenticado (debe ser ADMINISTRADOR).
+     * @return DTO con la membresía aprobada y estado HTTP 200 (OK).
+     */
+    @PatchMapping("/{communityId}/members/{userId}/approve")
+    public ResponseEntity<CommunityMemberResponseDto> approveMember(
+            @PathVariable UUID communityId,
+            @PathVariable UUID userId,
+            @RequestHeader("X-User-Id") UUID currentUserId) {
+        CommunityMemberResponseDto response = communityService.approveMember(communityId, userId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Rechaza o elimina la membresía de un usuario en una comunidad.
+     *
+     * @param communityId UUID de la comunidad.
+     * @param userId UUID del usuario cuya membresía se rechaza o elimina.
+     * @param currentUserId UUID del usuario autenticado (debe ser ADMINISTRADOR).
+     * @return Estado HTTP 204 (No Content).
+     */
+    @DeleteMapping("/{communityId}/members/{userId}")
+    public ResponseEntity<Void> rejectOrRemoveMember(
+            @PathVariable UUID communityId,
+            @PathVariable UUID userId,
+            @RequestHeader("X-User-Id") UUID currentUserId) {
+        communityService.rejectOrRemoveMember(communityId, userId, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }

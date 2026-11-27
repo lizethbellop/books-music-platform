@@ -74,9 +74,10 @@ class CommunityMapperTest {
         long memberCount = 25L;
         boolean isMember = true;
         MemberRole userRole = MemberRole.ADMINISTRADOR;
+        MemberStatus memberStatus = MemberStatus.ACTIVO;
 
         // ACT (Ejecución): Convertir la entidad a DTO de respuesta con los campos dinámicos.
-        CommunityResponseDto response = communityMapper.toResponseDto(entity, memberCount, isMember, userRole);
+        CommunityResponseDto response = communityMapper.toResponseDto(entity, memberCount, isMember, userRole, memberStatus);
 
         // ASSERT (Verificación): validar la copia de datos persistidos y la inclusión de los cálculos contextuales.
         assertAll(
@@ -92,7 +93,7 @@ class CommunityMapperTest {
     @Test
     @DisplayName("toMemberResponseDto: Debe transformar una entidad CommunityMember a DTO de respuesta")
     void toMemberResponseDto_debeMapearEntidadMiembroADto() {
-        // ARRANGE (Preparación): nistanciar la comunidad contenedora usando su constructor público
+        // ARRANGE (Preparación): instanciar la comunidad contenedora usando su constructor público
         UUID memberId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now();
@@ -115,7 +116,7 @@ class CommunityMapperTest {
         // ACT (Ejecución): transformar la entidad a DTO mediante el mapper
         CommunityMemberResponseDto response = communityMapper.toMemberResponseDto(member);
 
-        //ASSERT (Verificación): Confirmar la extracción correcta del ID de comunidad, rol, fecha y estado
+        // ASSERT (Verificación): Confirmar la extracción correcta del ID de comunidad, rol, fecha y estado
         assertAll(
                 () -> assertEquals(memberId, response.id()),
                 () -> assertEquals(community.getId(), response.communityId()),

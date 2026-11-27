@@ -4,6 +4,7 @@ import com.musa.communities_service.enums.CommunityStatus;
 import com.musa.communities_service.enums.CommunityType;
 import com.musa.communities_service.enums.CommunityVisibility;
 import com.musa.communities_service.enums.MemberRole;
+import com.musa.communities_service.enums.MemberStatus;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -21,5 +22,6 @@ public record CommunityResponseDto(
         CommunityStatus status,
         long memberCount,
         boolean isMember,
-        MemberRole userRole
+        MemberRole userRole,
+        MemberStatus membershipStatus
 ) {}

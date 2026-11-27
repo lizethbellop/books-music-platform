@@ -1,58 +1,96 @@
 package com.musa.api_gateway;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RecommendationRouteTest {
     static final HttpServer upstream;
     static final AtomicReference<String> forwarded = new AtomicReference<>();
+
     static {
         try {
             upstream = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             upstream.createContext("/api/recommendations/books/me", exchange -> {
                 String bearer = exchange.getRequestHeaders().getFirst("Authorization");
-                forwarded.set(exchange.getRequestURI().getPath()+"|"+bearer);
+                forwarded.set(exchange.getRequestURI().getPath() + "|" + bearer);
                 byte[] body = (bearer == null ? "{\"detail\":\"Unauthorized\"}"
                         : "{\"items\":[{\"externalId\":\"OL1W\"}]}").getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(bearer == null ? 401 : 200, body.length);
-                try (var stream = exchange.getResponseBody()) { stream.write(body); }
+                try (var stream = exchange.getResponseBody()) {
+                    stream.write(body);
+                }
             });
             upstream.start();
-        } catch (Exception error) { throw new ExceptionInInitializerError(error); }
+        } catch (Exception error) {
+            throw new ExceptionInInitializerError(error);
+        }
     }
 
-    @DynamicPropertySource static void upstreamUrl(DynamicPropertyRegistry registry) {
+    @DynamicPropertySource
+    static void upstreamUrl(DynamicPropertyRegistry registry) {
         registry.add("RECOMMENDATIONS_SERVICE_URL",
-                () -> "http://127.0.0.1:"+upstream.getAddress().getPort());
+                () -> "http://127.0.0.1:" + upstream.getAddress().getPort());
     }
 
-    @Value("${local.server.port}") int gatewayPort;
-    @AfterAll static void stop() { upstream.stop(0); }
+    @Value("${local.server.port}")
+    int gatewayPort;
 
-    @Test void homePathAndBearerReachRecommendationsService() {
-        String response = RestClient.create("http://127.0.0.1:"+gatewayPort).get()
+    @Value("${musa.security.jwt.secret}")
+    String jwtSecret;
+
+    @AfterAll
+    static void stop() {
+        upstream.stop(0);
+    }
+
+    private String createValidToken() {
+        byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
+        var encoder = new NimbusJwtEncoder(new ImmutableSecret<>(new SecretKeySpec(keyBytes, "HmacSHA512")));
+        var claims = JwtClaimsSet.builder()
+                .issuer("musa-auth")
+                .subject("11111111-1111-1111-1111-111111111111")
+                .expiresAt(Instant.now().plusSeconds(300))
+                .build();
+        return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS512).build(), claims)).getTokenValue();
+    }
+
+    @Test
+    void homePathAndBearerReachRecommendationsService() {
+        String token = createValidToken();
+        String response = RestClient.create("http://127.0.0.1:" + gatewayPort).get()
                 .uri("/api/recommendations/books/me")
-                .header("Authorization", "Bearer session-token")
+                .header("Authorization", "Bearer " + token)
                 .retrieve().body(String.class);
         assertTrue(response.contains("OL1W"));
-        assertEquals("/api/recommendations/books/me|Bearer session-token", forwarded.get());
+        assertEquals("/api/recommendations/books/me|Bearer " + token, forwarded.get());
     }
 
-    @Test void acceptsFlutterWebPreflightWithoutAToken() {
-        var response = RestClient.create("http://127.0.0.1:"+gatewayPort)
+    @Test
+    void acceptsFlutterWebPreflightWithoutAToken() {
+        var response = RestClient.create("http://127.0.0.1:" + gatewayPort)
                 .method(org.springframework.http.HttpMethod.OPTIONS)
                 .uri("/api/recommendations/books/me")
                 .header("Origin", "http://localhost:5555")
@@ -64,9 +102,10 @@ class RecommendationRouteTest {
         assertTrue(response.getHeaders().getFirst("Access-Control-Allow-Headers").toLowerCase().contains("authorization"));
     }
 
-    @Test void rejectsAnUnconfiguredWebOrigin() {
+    @Test
+    void rejectsAnUnconfiguredWebOrigin() {
         var error = assertThrows(HttpClientErrorException.class, () ->
-                RestClient.create("http://127.0.0.1:"+gatewayPort)
+                RestClient.create("http://127.0.0.1:" + gatewayPort)
                         .method(org.springframework.http.HttpMethod.OPTIONS)
                         .uri("/api/recommendations/books/me")
                         .header("Origin", "https://unconfigured.example")
@@ -75,9 +114,10 @@ class RecommendationRouteTest {
         assertEquals(403, error.getStatusCode().value());
     }
 
-    @Test void preservesServiceUnauthorizedResponse() {
+    @Test
+    void preservesServiceUnauthorizedResponse() {
         var error = assertThrows(HttpClientErrorException.class, () ->
-                RestClient.create("http://127.0.0.1:"+gatewayPort).get()
+                RestClient.create("http://127.0.0.1:" + gatewayPort).get()
                         .uri("/api/recommendations/books/me").retrieve().body(String.class));
         assertEquals(401, error.getStatusCode().value());
     }

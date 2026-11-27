@@ -87,7 +87,8 @@ class CommunityServiceImplTest {
                 CommunityStatus.ACTIVA,
                 1L,
                 true,
-                MemberRole.ADMINISTRADOR
+                MemberRole.ADMINISTRADOR,
+                MemberStatus.ACTIVO
         );
     }
 
@@ -104,7 +105,8 @@ class CommunityServiceImplTest {
                 .thenReturn(false);
         when(communityMapper.toEntity(request, userId)).thenReturn(community);
         when(communityRepository.save(community)).thenReturn(community);
-        when(communityMapper.toResponseDto(community, 1L, true, MemberRole.ADMINISTRADOR)).thenReturn(responseDto);
+        when(communityMapper.toResponseDto(community, 1L, true, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO))
+                .thenReturn(responseDto);
 
         // ACT: ejecutar la creación de la comunidad
         CommunityResponseDto result = communityService.createCommunity(request, userId);
@@ -149,9 +151,10 @@ class CommunityServiceImplTest {
         when(communityRepository.searchCommunities("Lectura", CommunityType.LIBROS, CommunityStatus.ACTIVA, pageable))
                 .thenReturn(communityPage);
         when(memberRepository.countByCommunityIdAndStatus(communityId, MemberStatus.ACTIVO)).thenReturn(5L);
-        when(memberRepository.findByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO))
+        when(memberRepository.findByCommunityIdAndUserId(communityId, userId))
                 .thenReturn(Optional.of(member));
-        when(communityMapper.toResponseDto(community, 5L, true, MemberRole.ADMINISTRADOR)).thenReturn(responseDto);
+        when(communityMapper.toResponseDto(community, 5L, true, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO))
+                .thenReturn(responseDto);
 
         // ACT: ejecutar la búsqueda de comunidades
         Page<CommunityResponseDto> result = communityService.searchCommunities("Lectura", CommunityType.LIBROS, pageable, userId);
@@ -170,8 +173,8 @@ class CommunityServiceImplTest {
         // ARRANGE: configurar el hallazgo de la comunidad activa y sus membresías
         when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
         when(memberRepository.countByCommunityIdAndStatus(communityId, MemberStatus.ACTIVO)).thenReturn(10L);
-        when(memberRepository.findByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO)).thenReturn(Optional.empty());
-        when(communityMapper.toResponseDto(community, 10L, false, null)).thenReturn(responseDto);
+        when(memberRepository.findByCommunityIdAndUserId(communityId, userId)).thenReturn(Optional.empty());
+        when(communityMapper.toResponseDto(community, 10L, false, null, null)).thenReturn(responseDto);
 
         // ACT: consultar por identificador
         CommunityResponseDto result = communityService.getCommunityById(communityId, userId);
@@ -201,7 +204,7 @@ class CommunityServiceImplTest {
         when(memberRepository.existsByCommunityIdAndUserIdAndRoleAndStatus(communityId, userId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO)).thenReturn(true);
         when(communityRepository.save(community)).thenReturn(community);
         when(memberRepository.countByCommunityIdAndStatus(communityId, MemberStatus.ACTIVO)).thenReturn(1L);
-        when(communityMapper.toResponseDto(community, 1L, true, MemberRole.ADMINISTRADOR)).thenReturn(responseDto);
+        when(communityMapper.toResponseDto(community, 1L, true, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO)).thenReturn(responseDto);
 
         // ACT: invocar la actualización
         CommunityResponseDto result = communityService.updateCommunity(communityId, request, userId);
@@ -283,7 +286,7 @@ class CommunityServiceImplTest {
     void leaveCommunity_debePermitirSalidaAMiembroRegular() {
         // ARRANGE: instanciar miembro activo regular
         CommunityMember member = new CommunityMember(community, userId, MemberRole.MIEMBRO, MemberStatus.ACTIVO);
-        when(memberRepository.findByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO))
+        when(memberRepository.findByCommunityIdAndUserId(communityId, userId))
                 .thenReturn(Optional.of(member));
 
         // ACT: procesar la salida voluntaria
@@ -299,7 +302,7 @@ class CommunityServiceImplTest {
     void leaveCommunity_debeLanzarExcepcion_siEsUnicoAdmin() {
         // ARRANGE: miembro administrador único activo
         CommunityMember adminMember = new CommunityMember(community, userId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO);
-        when(memberRepository.findByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO))
+        when(memberRepository.findByCommunityIdAndUserId(communityId, userId))
                 .thenReturn(Optional.of(adminMember));
         when(memberRepository.countByCommunityIdAndRoleAndStatus(communityId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO))
                 .thenReturn(1L);

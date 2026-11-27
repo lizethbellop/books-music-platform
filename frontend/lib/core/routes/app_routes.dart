@@ -11,4 +11,5 @@ abstract final class AppRoutes {
   static const String music = '/music';
   static const String books = '/books';
   static const String messages = '/messages';
+  static const String communities = '/communities';
 }

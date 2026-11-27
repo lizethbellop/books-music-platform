@@ -152,7 +152,7 @@ class CommunityActivityServiceImplTest {
     @DisplayName("CU-50: Debe actualizar la actividad correctamente")
     void updateActivity_debeActualizarActividadExitosamente() {
         // ARRANGE: simular búsqueda exitosa de actividad programada y actualización
-        ActivityUpdateRequestDto request = new ActivityUpdateRequestDto("Título Nuevo", null, null, null, null);
+        ActivityUpdateRequestDto request = new ActivityUpdateRequestDto("Título Nuevo", null, null, null, null, null);
         when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
         when(memberRepository.existsByCommunityIdAndUserIdAndRoleAndStatus(communityId, userId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO)).thenReturn(true);
         when(activityRepository.findByIdAndCommunityIdAndStatus(activityId, communityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
@@ -171,31 +171,32 @@ class CommunityActivityServiceImplTest {
 
     // PRUEBAS PARA: deleteActivity (CU-51)
     @Test
-    @DisplayName("CU-51: Debe cancelar una actividad cambiando su estado a CANCELADA")
+    @DisplayName("CU-51: Debe eliminar lógicamente una actividad cambiando su estado a ELIMINADA")
     void deleteActivity_debeCancelarActividad() {
-        // ARRANGE: simular búsqueda de la actividad a cancelar por parte del administrador
+        // ARRANGE: simular búsqueda de la actividad a eliminar por parte del administrador
         when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
         when(memberRepository.existsByCommunityIdAndUserIdAndRoleAndStatus(communityId, userId, MemberRole.ADMINISTRADOR, MemberStatus.ACTIVO)).thenReturn(true);
-        when(activityRepository.findByIdAndCommunityIdAndStatus(activityId, communityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
+        when(activityRepository.findByIdAndCommunityIdAndStatusNot(activityId, communityId, ActivityStatus.ELIMINADA)).thenReturn(Optional.of(activity));
 
-        // ACT: ejecutar la eliminación/cancelación
+        // ACT: ejecutar la eliminación lógica
         activityService.deleteActivity(communityId, activityId, userId);
 
-        // ASSERT: comprobar la actualización del estado a CANCELADA
-        assertEquals(ActivityStatus.CANCELADA, activity.getStatus());
+        // ASSERT: comprobar la actualización del estado a ELIMINADA y cancelación de RSVPs
+        assertEquals(ActivityStatus.ELIMINADA, activity.getStatus());
+        verify(participantRepository).updateStatusByActivityIdAndStatus(activityId, ParticipantStatus.CONFIRMADA, ParticipantStatus.CANCELADA);
         verify(activityRepository).save(activity);
     }
 
     // PRUEBAS PARA: getCommunityActivities (CU-52)
     @Test
-    @DisplayName("CU-52: Debe retornar las actividades programadas paginadas para una comunidad")
+    @DisplayName("CU-52: Debe retornar las actividades visibles paginadas para una comunidad")
     void getCommunityActivities_debeRetornarPaginaDeActividades() {
-        // ARRANGE: simular la consulta paginada de actividades programadas
+        // ARRANGE: simular la consulta paginada de actividades visibles
         Pageable pageable = PageRequest.of(0, 10);
         Page<CommunityActivity> page = new PageImpl<>(List.of(activity));
 
         when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
-        when(activityRepository.findByCommunityIdAndStatus(communityId, ActivityStatus.PROGRAMADA, pageable)).thenReturn(page);
+        when(activityRepository.findByCommunityIdAndStatusNot(eq(communityId), eq(ActivityStatus.ELIMINADA), eq(pageable))).thenReturn(page);
         when(participantRepository.countByActivityIdAndStatus(activityId, ParticipantStatus.CONFIRMADA)).thenReturn(5L);
         when(participantRepository.existsByActivityIdAndUserIdAndStatus(activityId, userId, ParticipantStatus.CONFIRMADA)).thenReturn(false);
         when(activityMapper.toResponseDto(activity, 5L, false)).thenReturn(activityResponseDto);
@@ -214,17 +215,18 @@ class CommunityActivityServiceImplTest {
     @Test
     @DisplayName("CU-53: Debe registrar o actualizar la asistencia (RSVP) a una actividad si es miembro de la comunidad")
     void confirmAttendance_debeConfirmarAsistencia_siEsMiembro() {
-        // ARRANGE: simular que el usuario es miembro activo de la comunidad organizadora
+        // ARRANGE: simular que la comunidad está activa y el usuario es miembro activo
         ActivityParticipantResponseDto participantDto = new ActivityParticipantResponseDto(UUID.randomUUID(), activityId, userId, ParticipantStatus.CONFIRMADA, OffsetDateTime.now());
 
-        when(activityRepository.findByIdAndStatus(activityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
+        when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
+        when(activityRepository.findByIdAndCommunityIdAndStatus(activityId, communityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
         when(memberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO)).thenReturn(true);
         when(participantRepository.findByActivityIdAndUserId(activityId, userId)).thenReturn(Optional.empty());
         when(participantRepository.save(any(ActivityParticipant.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(activityMapper.toParticipantResponseDto(any(ActivityParticipant.class))).thenReturn(participantDto);
 
         // ACT: confirmar asistencia a la actividad
-        ActivityParticipantResponseDto result = activityService.confirmAttendance(activityId, userId);
+        ActivityParticipantResponseDto result = activityService.confirmAttendance(communityId, activityId, userId);
 
         // ASSERT: comprobar que la asistencia haya sido grabada con estado CONFIRMADA
         assertNotNull(result);
@@ -233,14 +235,15 @@ class CommunityActivityServiceImplTest {
     }
 
     @Test
-    @DisplayName("CU-53: Debe lanzar BusinessRuleException si un usuario que no es miembro intenta confirmar asistencia")
+    @DisplayName("CU-53: Debe lanzar ForbiddenActionException si un usuario que no es miembro intenta confirmar asistencia")
     void confirmAttendance_debeLanzarExcepcion_siNoEsMiembroDeLaComunidad() {
-        // ARRANGE: usuario sin membresía activa en la comunidad
-        when(activityRepository.findByIdAndStatus(activityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
+        // ARRANGE: comunidad activa y usuario sin membresía activa en la comunidad
+        when(communityRepository.findByIdAndStatus(communityId, CommunityStatus.ACTIVA)).thenReturn(Optional.of(community));
+        when(activityRepository.findByIdAndCommunityIdAndStatus(activityId, communityId, ActivityStatus.PROGRAMADA)).thenReturn(Optional.of(activity));
         when(memberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, userId, MemberStatus.ACTIVO)).thenReturn(false);
 
         // ACT & ASSERT: comprobar la restricción que exige pertenecer a la comunidad previa asistencia
-        assertThrows(BusinessRuleException.class, () -> activityService.confirmAttendance(activityId, userId));
+        assertThrows(ForbiddenActionException.class, () -> activityService.confirmAttendance(communityId, activityId, userId));
         verify(participantRepository, never()).save(any());
     }
 }

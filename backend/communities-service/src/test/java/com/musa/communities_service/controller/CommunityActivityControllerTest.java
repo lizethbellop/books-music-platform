@@ -50,6 +50,9 @@ class CommunityActivityControllerTest {
         activityId = UUID.randomUUID();
         userId = UUID.randomUUID();
 
+        OffsetDateTime start = OffsetDateTime.now().plusDays(1);
+        OffsetDateTime end = start.plusHours(2);
+
         activityResponseDto = new ActivityResponseDto(
                 activityId,
                 communityId,
@@ -57,10 +60,10 @@ class CommunityActivityControllerTest {
                 "Debate: Cien Años de Soledad",
                 "Discusión sobre los capítulos 1 al 5",
                 "Sala Virtual Zoom",
-                OffsetDateTime.parse("2026-11-15T18:00:00Z"),
-                OffsetDateTime.parse("2026-11-15T20:00:00Z"),
-                OffsetDateTime.parse("2026-10-29T10:00:00Z"),
-                OffsetDateTime.parse("2026-10-29T10:00:00Z"),
+                start,
+                end,
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
                 ActivityStatus.PROGRAMADA,
                 5L,
                 true
@@ -70,10 +73,10 @@ class CommunityActivityControllerTest {
     @Test
     @DisplayName("CU-49: Crear actividad debe retornar HTTP 201 Created cuando los datos son válidos")
     void createActivity_debeRetornar201Created_cuandoPeticionEsValida() throws Exception {
-        // ARRANGE
         when(activityService.createActivity(eq(communityId), any(ActivityCreateRequestDto.class), eq(userId)))
                 .thenReturn(activityResponseDto);
 
+        OffsetDateTime start = OffsetDateTime.now().plusDays(1);
         String jsonBody = """
                 {
                   "title": "Debate: Cien Años de Soledad",
@@ -82,9 +85,8 @@ class CommunityActivityControllerTest {
                   "startsAt": "%s",
                   "endsAt": "%s"
                 }
-                """.formatted(OffsetDateTime.now().plusDays(1), OffsetDateTime.now().plusDays(1).plusHours(2));
+                """.formatted(start, start.plusHours(2));
 
-        // ACT & ASSERT
         mockMvc.perform(post("/api/v1/communities/{communityId}/activities", communityId)
                         .header("X-User-Id", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,21 +103,20 @@ class CommunityActivityControllerTest {
     @Test
     @DisplayName("CU-50: Actualizar actividad debe retornar HTTP 200 OK")
     void updateActivity_debeRetornar200OK_cuandoActualizacionEsExitosa() throws Exception {
-        // ARRANGE
         when(activityService.updateActivity(eq(communityId), eq(activityId), any(ActivityUpdateRequestDto.class), eq(userId)))
                 .thenReturn(activityResponseDto);
 
+        OffsetDateTime start = OffsetDateTime.now().plusDays(2);
         String jsonBody = """
                 {
                   "title": "Debate Ampliado: Cien Años de Soledad",
                   "description": "Se analizarán los capítulos del 1 al 10.",
                   "location": "Google Meet",
-                  "startsAt": "2026-11-15T18:30:00Z",
-                  "endsAt": "2026-11-15T21:00:00Z"
+                  "startsAt": "%s",
+                  "endsAt": "%s"
                 }
-                """;
+                """.formatted(start, start.plusHours(2));
 
-        // ACT & ASSERT
         mockMvc.perform(put("/api/v1/communities/{communityId}/activities/{activityId}", communityId, activityId)
                         .header("X-User-Id", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,10 +129,8 @@ class CommunityActivityControllerTest {
     @Test
     @DisplayName("CU-51: Eliminar actividad debe retornar HTTP 204 No Content")
     void deleteActivity_debeRetornar204NoContent_cuandoCancelacionEsExitosa() throws Exception {
-        // ARRANGE
         doNothing().when(activityService).deleteActivity(communityId, activityId, userId);
 
-        // ACT & ASSERT
         mockMvc.perform(delete("/api/v1/communities/{communityId}/activities/{activityId}", communityId, activityId)
                         .header("X-User-Id", userId.toString()))
                 .andExpect(status().isNoContent());
@@ -140,12 +139,10 @@ class CommunityActivityControllerTest {
     @Test
     @DisplayName("CU-52: Obtener agenda de actividades paginada debe retornar HTTP 200 OK")
     void getCommunityActivities_debeRetornarPaginaDeActividades_conEstado200OK() throws Exception {
-        // ARRANGE
         Page<ActivityResponseDto> pageResponse = new PageImpl<>(List.of(activityResponseDto));
         when(activityService.getCommunityActivities(eq(communityId), any(Pageable.class), eq(userId)))
                 .thenReturn(pageResponse);
 
-        // ACT & ASSERT
         mockMvc.perform(get("/api/v1/communities/{communityId}/activities", communityId)
                         .param("page", "0")
                         .param("size", "10")
@@ -153,27 +150,25 @@ class CommunityActivityControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(activityId.toString()))
                 .andExpect(jsonPath("$.content[0].title").value("Debate: Cien Años de Soledad"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
     @Test
     @DisplayName("CU-53: Confirmar asistencia RSVP debe retornar HTTP 200 OK")
     void confirmAttendance_debeRetornar200OK_conEstadoConfirmada() throws Exception {
-        // ARRANGE
         UUID participantId = UUID.randomUUID();
         ActivityParticipantResponseDto participantResponse = new ActivityParticipantResponseDto(
                 participantId,
                 activityId,
                 userId,
                 ParticipantStatus.CONFIRMADA,
-                OffsetDateTime.parse("2026-10-29T10:00:00Z")
+                OffsetDateTime.now()
         );
 
-        when(activityService.confirmAttendance(eq(activityId), eq(userId)))
+        when(activityService.confirmAttendance(eq(communityId), eq(activityId), eq(userId)))
                 .thenReturn(participantResponse);
 
-        // ACT & ASSERT
-        mockMvc.perform(post("/api/v1/activities/{activityId}/participants", activityId)
+        mockMvc.perform(post("/api/v1/communities/{communityId}/activities/{activityId}/participants", communityId, activityId)
                         .header("X-User-Id", userId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(participantId.toString()))

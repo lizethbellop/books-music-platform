@@ -126,8 +126,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleGenericException(
-            Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex, HttpServletRequest request) {
         // Loguear el error real internamente para el equipo de desarrollo
         log.error("Error no controlado en la ruta {}: ", request.getRequestURI(), ex);
 

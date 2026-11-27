@@ -3,13 +3,12 @@ package com.musa.communities_service.repository;
 import com.musa.communities_service.entity.CommunityMember;
 import com.musa.communities_service.enums.MemberRole;
 import com.musa.communities_service.enums.MemberStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Repositorio Spring Data JPA para la gestión de membresías de usuarios en comunidades
@@ -63,26 +62,6 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
     boolean existsByCommunityIdAndUserIdAndRoleAndStatus(UUID communityId, UUID userId, MemberRole role, MemberStatus status);
 
     /**
-     * Obtiene una lista paginada de miembros asociados a una comunidad según su estado de membresía.
-     *
-     * @param communityId UUID de la comunidad.
-     * @param status Estado de membresía por el cual filtrar.
-     * @param pageable Parámetros de paginación.
-     * @return Página con los miembros encontrados.
-     */
-    Page<CommunityMember> findByCommunityIdAndStatus(UUID communityId, MemberStatus status, Pageable pageable);
-
-    /**
-     * Obtiene las membresías registradas de un usuario en todas las comunidades filtradas por su estado.
-     *
-     * @param userId UUID del usuario.
-     * @param status Estado de la membresía a consultar.
-     * @param pageable Parámetros de paginación.
-     * @return Página con las membresías asociadas al usuario.
-     */
-    Page<CommunityMember> findByUserIdAndStatus(UUID userId, MemberStatus status, Pageable pageable);
-
-    /**
      * Cuenta la cantidad total de miembros vinculados a una comunidad con un estado determinado.
      *
      * @param communityId UUID de la comunidad.
@@ -100,4 +79,6 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
      * @return Total de miembros que cumplen con los criterios.
      */
     long countByCommunityIdAndRoleAndStatus(UUID communityId, MemberRole role, MemberStatus status);
+
+    List<CommunityMember> findByCommunityIdAndStatusOrderByJoinedAtAsc(UUID communityId, MemberStatus status);
 }

@@ -168,3 +168,12 @@ spring:
               uri: ${COMMUNITIES_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/api/v1/polls/**,/api/v1/communities/*/polls,/api/v1/communities/*/polls/**
+            
+            - id: communities-service
+              uri: http://localhost:8086
+              predicates:
+                - Path=/api/v1/communities/**
+musa:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}

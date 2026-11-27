@@ -127,6 +127,7 @@ class _MusaAppState extends State<MusaApp> {
       AppRoutes.books: (_) => _authenticatedPage(AppSection.books),
       AppRoutes.messages: (_) => _authenticatedPage(AppSection.messages),
       AppRoutes.profile: (_) => _authenticatedPage(AppSection.profile),
+      AppRoutes.communities: (_) => _authenticatedPage(AppSection.communities),
     },
   );
 }

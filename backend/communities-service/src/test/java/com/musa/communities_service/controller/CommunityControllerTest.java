@@ -67,7 +67,8 @@ class CommunityControllerTest {
                 CommunityStatus.ACTIVA,
                 10L,
                 true,
-                MemberRole.ADMINISTRADOR
+                MemberRole.ADMINISTRADOR,
+                MemberStatus.ACTIVO
         );
     }
 
@@ -118,18 +119,17 @@ class CommunityControllerTest {
                 .param("size", "10")
                 .header("X-User-Id", userId.toString()));
 
-        // ASSERT (Verificación): validar respuesta HTTP 200 OK y la estructura paginada del JSON (content, totalElements).
+        // ASSERT (Verificación): validar respuesta HTTP 200 OK y la estructura paginada del JSON (content, page.totalElements).
         response.andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(communityId.toString()))
                 .andExpect(jsonPath("$.content[0].name").value("Club de Lectura Musa"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
     @Test
     @DisplayName("CU-43: Obtener detalle de comunidad por ID debe retornar HTTP 200 OK")
     void getCommunityById_debeRetornar200OK_cuandoExisteComunidad() throws Exception {
         // ARRANGE (Preparación): instruct a Mockito a devolver el DTO de la comunidad cuando se consulte su UUID.
-
         when(communityService.getCommunityById(eq(communityId), eq(userId)))
                 .thenReturn(communityResponseDto);
 
@@ -159,7 +159,8 @@ class CommunityControllerTest {
                 CommunityStatus.ACTIVA,
                 10L,
                 true,
-                MemberRole.ADMINISTRADOR
+                MemberRole.ADMINISTRADOR,
+                MemberStatus.ACTIVO
         );
 
         when(communityService.updateCommunity(eq(communityId), any(CommunityUpdateRequestDto.class), eq(userId)))

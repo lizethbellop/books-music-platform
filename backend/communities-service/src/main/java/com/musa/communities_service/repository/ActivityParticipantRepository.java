@@ -2,9 +2,10 @@ package com.musa.communities_service.repository;
 
 import com.musa.communities_service.entity.ActivityParticipant;
 import com.musa.communities_service.enums.ParticipantStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -40,26 +41,6 @@ public interface ActivityParticipantRepository extends JpaRepository<ActivityPar
     boolean existsByActivityIdAndUserIdAndStatus(UUID activityId, UUID userId, ParticipantStatus status);
 
     /**
-     * Obtiene los participantes inscritos en una actividad específica según su estado.
-     *
-     * @param activityId UUID de la actividad.
-     * @param status Estado de la participación.
-     * @param pageable Configuración de paginación.
-     * @return Página con los participantes de la actividad.
-     */
-    Page<ActivityParticipant> findByActivityIdAndStatus(UUID activityId, ParticipantStatus status, Pageable pageable);
-
-    /**
-     * Obtiene el historial de actividades donde ha participado un usuario.
-     *
-     * @param userId UUID del usuario.
-     * @param status Estado de la participación.
-     * @pageable Configuración de paginación.
-     * @return Página con las participaciones del usuario.
-     */
-    Page<ActivityParticipant> findByUserIdAndStatus(UUID userId, ParticipantStatus status, Pageable pageable);
-
-    /**
      * Cuenta el total de inscritos confirmados en una actividad.
      *
      * @param activityId UUID de la actividad.
@@ -67,4 +48,29 @@ public interface ActivityParticipantRepository extends JpaRepository<ActivityPar
      * @return Número total de asistentes confirmados.
      */
     long countByActivityIdAndStatus(UUID activityId, ParticipantStatus status);
+
+    /**
+     * Obtiene el registro de participación de un usuario en una actividad específica filtrando por estado.
+     *
+     * @param activityId UUID de la actividad.
+     * @param userId UUID del usuario.
+     * @param status Estado de la participación (ej. CONFIRMADA).
+     * @return Un {@link Optional} con el registro de participación si coincide con el estado.
+     */
+    Optional<ActivityParticipant> findByActivityIdAndUserIdAndStatus(UUID activityId, UUID userId, ParticipantStatus status);
+
+    /**
+     * Actualiza el estado de participación de todos los registros asociados a una actividad específica.
+     *
+     * @param activityId UUID de la actividad.
+     * @param currentStatus Estado actual de los registros a actualizar.
+     * @param newStatus Nuevo estado que se asignará a los registros.
+     * @return Número de registros afectados por la actualización.
+     */
+    @Modifying
+    @Query("UPDATE ActivityParticipant p SET p.status = :newStatus WHERE p.activity.id = :activityId AND p.status = :currentStatus")
+    int updateStatusByActivityIdAndStatus(
+            @Param("activityId") UUID activityId,
+            @Param("currentStatus") ParticipantStatus currentStatus,
+            @Param("newStatus") ParticipantStatus newStatus);
 }

@@ -107,15 +107,35 @@ public class CommunityActivityController {
      * Registra o actualiza la confirmación de asistencia (RSVP) del usuario a una actividad.
      * Caso de Uso: CU-53.
      *
+     * @param communityId UUID de la comunidad.
      * @param activityId UUID de la actividad.
      * @param currentUserId UUID del usuario autenticado.
      * @return Confirmación de participación y estado HTTP 200 (OK).
      */
-    @PostMapping("/activities/{activityId}/participants")
+    @PostMapping("/communities/{communityId}/activities/{activityId}/participants")
     public ResponseEntity<ActivityParticipantResponseDto> confirmAttendance(
+            @PathVariable UUID communityId,
             @PathVariable UUID activityId,
             @RequestHeader("X-User-Id") UUID currentUserId) {
-        ActivityParticipantResponseDto response = activityService.confirmAttendance(activityId, currentUserId);
+        ActivityParticipantResponseDto response = activityService.confirmAttendance(communityId, activityId, currentUserId);
         return ResponseEntity.ok(response);
+    }
+
+
+    /**
+     * Cancela la confirmación de asistencia del usuario autenticado a una actividad.
+     *
+     * @param communityId UUID de la comunidad.
+     * @param activityId UUID de la actividad.
+     * @param currentUserId UUID del usuario autenticado.
+     * @return Estado HTTP 204 (No Content).
+     */
+    @DeleteMapping("/communities/{communityId}/activities/{activityId}/participants")
+    public ResponseEntity<Void> cancelAttendance(
+            @PathVariable UUID communityId,
+            @PathVariable UUID activityId,
+            @RequestHeader("X-User-Id") UUID currentUserId) {
+        activityService.cancelAttendance(communityId, activityId, currentUserId);
+        return ResponseEntity.noContent().build();
     }
 }

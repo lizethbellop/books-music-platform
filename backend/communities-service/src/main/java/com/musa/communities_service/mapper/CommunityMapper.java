@@ -6,6 +6,8 @@ import com.musa.communities_service.dto.response.CommunityResponseDto;
 import com.musa.communities_service.entity.Community;
 import com.musa.communities_service.entity.CommunityMember;
 import com.musa.communities_service.enums.MemberRole;
+import com.musa.communities_service.enums.MemberStatus;
+
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -30,7 +32,8 @@ public class CommunityMapper {
             Community entity,
             long memberCount,
             boolean isMember,
-            MemberRole userRole) {
+            MemberRole userRole,
+            MemberStatus membershipStatus) {
         return new CommunityResponseDto(
                 entity.getId(),
                 entity.getName(),
@@ -43,7 +46,8 @@ public class CommunityMapper {
                 entity.getStatus(),
                 memberCount,
                 isMember,
-                userRole
+                userRole,
+                membershipStatus
         );
     }
 

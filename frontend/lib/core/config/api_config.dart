@@ -15,4 +15,5 @@ abstract final class ApiConfig {
   static const String chatUrl = '$gatewayUrl/api/v1/chat';
   static const String usersUrl = '$gatewayUrl/api/v1/users';
   static const String usernamesUrl = '$gatewayUrl/api/v1/users/usernames';
+  static const String communitiesUrl = '$gatewayUrl/api/v1/communities';
 }
